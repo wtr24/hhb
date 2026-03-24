@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.vite/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+timescaledb_data/
+.DS_Store

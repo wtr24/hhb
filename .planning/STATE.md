@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Status
 
 - **Phase**: 1 — Infrastructure Bootstrap
-- **Current Plan**: 2 of 5 in Phase 1
-- **Last action**: Completed 01-01 (Docker Compose + TimescaleDB + Redis + Backend Dockerfile)
-- **Next action**: Execute 01-02
+- **Current Plan**: 3 of 5 in Phase 1
+- **Last action**: Completed 01-02 (FastAPI skeleton — health endpoint, database/Redis clients, WebSocket stub, Celery app)
+- **Next action**: Execute 01-03
 
 ## Milestone
 
@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Progress
 
-Phase 1: 1/5 plans complete
+Phase 1: 2/5 plans complete
 
 ## Decisions
 
@@ -31,12 +31,16 @@ Phase 1: 1/5 plans complete
 - Alembic configured with sync engine (psycopg2) for migrations even though app is async — avoids complexity
 - `create_hypertable` called immediately after `op.create_table` with `if_not_exists => TRUE` for idempotent migrations
 - Beat and worker containers have distinct commands to prevent duplicate scheduling if workers are scaled
+- Sync SQLAlchemy and sync Redis used for Phase 1 FastAPI health checks — async upgrade deferred to later phase
+- beat_schedule left empty dict in celery_app.py — Phase 2 populates with ingestion schedules
+- WebSocket stub echoes messages; Phase 2 wires Redis pub/sub fan-out into ConnectionManager
 
 ## Performance Metrics
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 01 | 01-01 | 118s | 2 | 11 |
+| 01 | 01-02 | 53s | 2 | 10 |
 
 ## Notes
 
@@ -47,5 +51,5 @@ Phase 1: 1/5 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 01-01-PLAN.md
-- **Timestamp**: 2026-03-24T21:53:00Z
+- **Stopped at**: Completed 01-02-PLAN.md
+- **Timestamp**: 2026-03-24T21:56:32Z

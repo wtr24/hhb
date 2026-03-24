@@ -39,7 +39,7 @@
 
 Plans:
 - [x] 01-01: Docker Compose + TimescaleDB + Redis — base infrastructure with health checks
-- [ ] 01-02: FastAPI skeleton — routing structure, WebSocket broadcaster, Celery app config
+- [x] 01-02: FastAPI skeleton — routing structure, WebSocket broadcaster, Celery app config
 - [ ] 01-03: React/Vite frontend — Bloomberg dark theme (TailwindCSS), keyboard navigation shell, module routing
 - [ ] 01-04: Docker Compose dev override — hot-reload for frontend + backend, volume mounts
 - [ ] 01-05: `.env.example` + `docker-compose.prod.yml` + startup migration scripts

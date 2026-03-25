@@ -13,8 +13,8 @@
 - [ ] **INFRA-02**: FastAPI health endpoint returns 200 and reports status of all service dependencies
 - [ ] **INFRA-03**: React/Vite frontend serves Bloomberg dark terminal UI at port 3000
 - [ ] **INFRA-04**: Celery beat scheduler runs in its own container and does not share workers
-- [ ] **INFRA-05**: `.env.example` documents all 7 required free API keys with signup links
-- [ ] **INFRA-06**: Development docker-compose override enables hot-reload for frontend and backend
+- [x] **INFRA-05**: `.env.example` documents all 7 required free API keys with signup links
+- [x] **INFRA-06**: Development docker-compose override enables hot-reload for frontend and backend
 - [ ] **INFRA-07**: TimescaleDB hypertables created for all data types on first startup
 
 ### Data Ingestion

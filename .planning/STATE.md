@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: unknown
+last_updated: "2026-03-25T06:48:01.770Z"
+progress:
+  total_phases: 12
+  completed_phases: 0
+  total_plans: 5
+  completed_plans: 3
+---
+
 # Project State
 
 ## Project Reference
@@ -5,7 +18,7 @@
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Unified zero-cost research terminal — pull up any instrument instantly with live quotes, charts, indicators, macro context, news sentiment, and positioning data
-**Current focus:** Phase 1 — Infrastructure Bootstrap
+**Current focus:** Phase 01 — infrastructure-bootstrap
 
 ## Current Status
 
@@ -17,6 +30,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Milestone
 
 **v1.0 — Full Terminal**: Phases 1–12
+
 - 12 phases total
 - 68 plans total
 - 98 v1 requirements
@@ -34,6 +48,8 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 - Sync SQLAlchemy and sync Redis used for Phase 1 FastAPI health checks — async upgrade deferred to later phase
 - beat_schedule left empty dict in celery_app.py — Phase 2 populates with ingestion schedules
 - WebSocket stub echoes messages; Phase 2 wires Redis pub/sub fan-out into ConnectionManager
+- [Phase 01]: Frontend dev port remapped to 3000:5173 (Vite) not 3000:80 (Nginx) in docker-compose.dev.yml
+- [Phase 01]: Anonymous volume /app/node_modules protects container npm install from host directory overwrite in dev
 - [Phase 01]: docker-compose.prod.yml intentionally minimal for Phase 1 — resource limits deferred to later phases
 - [Phase 01]: .env committed with empty API keys — Phase 1 does not use live data; keys populated before Phase 2 ingestion
 
@@ -43,6 +59,8 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 |-------|------|----------|-------|-------|
 | 01 | 01-01 | 118s | 2 | 11 |
 | 01 | 01-02 | 53s | 2 | 10 |
+| 01 | 01-03 | 113s | 2 | 15 |
+| 01 | 01-04 | 26s | 1 | 1 |
 | 01 | 01-05 | 45s | 2 | 3 |
 
 ## Notes

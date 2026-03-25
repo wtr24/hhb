@@ -40,7 +40,7 @@
 Plans:
 - [x] 01-01: Docker Compose + TimescaleDB + Redis — base infrastructure with health checks
 - [x] 01-02: FastAPI skeleton — routing structure, WebSocket broadcaster, Celery app config
-- [ ] 01-03: React/Vite frontend — Bloomberg dark theme (TailwindCSS), keyboard navigation shell, module routing
+- [x] 01-03: React/Vite frontend — Bloomberg dark theme (TailwindCSS), keyboard navigation shell, module routing
 - [ ] 01-04: Docker Compose dev override — hot-reload for frontend + backend, volume mounts
 - [ ] 01-05: `.env.example` + `docker-compose.prod.yml` + startup migration scripts
 
@@ -302,7 +302,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure Bootstrap | 0/5 | Not started | - |
+| 1. Infrastructure Bootstrap | 3/5 | In Progress|  |
 | 2. Data Ingestion Foundation | 0/6 | Not started | - |
 | 3. Equity Overview | 0/6 | Not started | - |
 | 4. Technical Analysis Engine | 0/7 | Not started | - |

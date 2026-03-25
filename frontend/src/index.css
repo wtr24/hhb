@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --color-terminal-bg: #0a0a0a;
+  --color-terminal-amber: #ff9900;
+  --color-terminal-green: #00d084;
+  --color-terminal-red: #ff4444;
+  --color-terminal-dim: #404040;
+  --color-terminal-border: #1a1a1a;
+  --font-family-terminal: "Courier New", "Lucida Console", monospace;
+}
+
+body {
+  background-color: var(--color-terminal-bg);
+  color: var(--color-terminal-amber);
+  font-family: var(--font-family-terminal);
+  font-size: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Scrollbar styling for terminal aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+}

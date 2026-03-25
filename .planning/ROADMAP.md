@@ -60,8 +60,8 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — TimescaleDB hypertable schemas + SQLAlchemy models + async engine + test scaffold
-- [ ] 02-02-PLAN.md — Redis TTL cache helper + token bucket rate limiter + ingestion config
+- [x] 02-01-PLAN.md — TimescaleDB hypertable schemas + SQLAlchemy models + async engine + test scaffold
+- [x] 02-02-PLAN.md — Redis TTL cache helper + token bucket rate limiter + ingestion config
 - [ ] 02-03-PLAN.md — yfinance source + Celery ingest tasks + quote REST endpoint with fallback chain
 - [ ] 02-04-PLAN.md — FRED + Frankfurter + Treasury sources + macro/trigger REST endpoints
 - [ ] 02-05-PLAN.md — Celery beat schedule wiring (all 4 ingestion tasks)

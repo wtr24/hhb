@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to plan
-last_updated: "2026-03-25T06:56:10.820Z"
+last_updated: "2026-03-25T21:08:26.861Z"
 progress:
   total_phases: 12
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 11
+  completed_plans: 7
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Current Status
 
-- **Phase**: 1 — Infrastructure Bootstrap
-- **Current Plan**: 5 of 5 in Phase 1
-- **Last action**: Completed 01-05 (.env.example + docker-compose.prod.yml + startup validation)
-- **Next action**: Execute 01-04 or 01-06 (next wave)
+- **Phase**: 2 — Data Ingestion Foundation
+- **Current Plan**: 2 of N in Phase 2
+- **Last action**: Completed 02-02 (Redis TTL cache + token bucket rate limiter + ingestion config)
+- **Next action**: Continue Phase 2 remaining plans
 
 ## Milestone
 
@@ -52,6 +52,9 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 - [Phase 01]: Anonymous volume /app/node_modules protects container npm install from host directory overwrite in dev
 - [Phase 01]: docker-compose.prod.yml intentionally minimal for Phase 1 — resource limits deferred to later phases
 - [Phase 01]: .env committed with empty API keys — Phase 1 does not use live data; keys populated before Phase 2 ingestion
+- [Phase 02-01]: Added async engine (postgresql+asyncpg://) alongside sync engine in database.py — sync preserved for Alembic/Celery
+- [Phase 02-01]: Compression policies for all 5 hypertables added in migration 0002 (30-day interval)
+- [Phase 02-01]: YieldCurve PK is time-only — one canonical US Treasury snapshot per day
 
 ## Performance Metrics
 
@@ -62,6 +65,7 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 | 01 | 01-03 | 113s | 2 | 15 |
 | 01 | 01-04 | 26s | 1 | 1 |
 | 01 | 01-05 | 45s | 2 | 3 |
+| 02 | 02-01 | 3min | 2 | 11 |
 
 ## Notes
 
@@ -72,5 +76,5 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 01-05-PLAN.md
-- **Timestamp**: 2026-03-25T00:00:00Z
+- **Stopped at**: Completed 02-01-PLAN.md
+- **Timestamp**: 2026-03-25T21:07:34Z

@@ -24,7 +24,7 @@
 - [ ] **INGEST-03**: Redis TTL caching enforced per data type (per spec §5 table)
 - [ ] **INGEST-04**: Rate limit token buckets in Redis protect all API sources (Finnhub 60/min, FMP 250/day, Alpha Vantage 25/day, CoinGecko 13/hr)
 - [ ] **INGEST-05**: Fallback chain implemented: Live API → Redis cache → TimescaleDB last-known → stale warning → error
-- [ ] **INGEST-06**: All ingested data written to TimescaleDB — nothing cache-only
+- [x] **INGEST-06**: All ingested data written to TimescaleDB — nothing cache-only
 - [ ] **INGEST-07**: Frankfurter FX rates ingested on 30s schedule for major pairs + GBP crosses
 - [ ] **INGEST-08**: US Treasury XML yield curve ingested on 15m schedule
 - [ ] **INGEST-09**: FastAPI WebSocket broadcaster subscribes to Redis pub/sub and fans out to all connected browser clients

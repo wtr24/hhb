@@ -12,11 +12,9 @@ A unified research dashboard where any instrument — LLOY.L, BTC, GBP/USD, WTI 
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Full-stack Docker Compose deployment (frontend + api + beat + worker + redis + timescaledb) runnable with a single `docker compose up -d` — *Validated in Phase 1: Infrastructure Bootstrap*
 
 ### Active
-
-- [ ] Full-stack Docker Compose deployment (frontend + api + beat + worker + redis + timescaledb) runnable with a single `docker compose up -d`
 - [ ] Equity overview with live quotes, multi-timeframe charts, fundamentals, short interest, insider transactions, options chain
 - [ ] 60+ technical indicators with historical win rates and statistical significance (p-values)
 - [ ] 60+ candlestick patterns + chart pattern detection + Fibonacci + Elliott Wave labelling
@@ -74,9 +72,9 @@ A unified research dashboard where any instrument — LLOY.L, BTC, GBP/USD, WTI 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| TimescaleDB over plain Postgres | Hypertable compression + time-series queries for OHLCV data; partitioned by time automatically | — Pending |
-| Redis dual role (cache + pub/sub) | Single service covers both TTL caching for rate limits and WebSocket fan-out to browsers | — Pending |
-| Celery beat as separate container | Prevents duplicate scheduling if workers are scaled | — Pending |
+| TimescaleDB over plain Postgres | Hypertable compression + time-series queries for OHLCV data; partitioned by time automatically | — Phase 1 wired, hypertable migration confirmed |
+| Redis dual role (cache + pub/sub) | Single service covers both TTL caching for rate limits and WebSocket fan-out to browsers | — Phase 1 wired, Phase 2 activates pub/sub |
+| Celery beat as separate container | Prevents duplicate scheduling if workers are scaled | — Confirmed in Phase 1; distinct commands prevent duplicate scheduling |
 | FinBERT local inference | Zero ongoing cost; finance-specific model outperforms general NLP on financial text | — Pending |
 | lightweight-charts (TradingView) | Apache 2.0, performant canvas rendering, supports all chart types needed | — Pending |
 | TA-Lib + pandas-ta dual library | TA-Lib for speed (C bindings), pandas-ta as Python fallback; 200+ indicators combined | — Pending |
@@ -100,5 +98,9 @@ This document evolves at phase transitions and milestone boundaries.
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
 
+## Current State
+
+Phase 1 complete — full Docker Compose stack bootstrapped (6 services), FastAPI skeleton with health/WebSocket, React/Vite Bloomberg terminal shell, dev hot-reload override, production restart policies, and .env.example with all 7 API keys documented.
+
 ---
-*Last updated: 2026-03-24 after initialization*
+*Last updated: 2026-03-25 after Phase 1: Infrastructure Bootstrap*

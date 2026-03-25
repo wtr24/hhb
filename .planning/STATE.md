@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Status
 
 - **Phase**: 1 — Infrastructure Bootstrap
-- **Current Plan**: 3 of 5 in Phase 1
-- **Last action**: Completed 01-02 (FastAPI skeleton — health endpoint, database/Redis clients, WebSocket stub, Celery app)
-- **Next action**: Execute 01-03
+- **Current Plan**: 5 of 5 in Phase 1
+- **Last action**: Completed 01-05 (.env.example + docker-compose.prod.yml + startup validation)
+- **Next action**: Execute 01-04 or 01-06 (next wave)
 
 ## Milestone
 
@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Progress
 
-Phase 1: 2/5 plans complete
+Phase 1: [██████░░░░] 60% — 3/5 plans complete
 
 ## Decisions
 
@@ -34,6 +34,8 @@ Phase 1: 2/5 plans complete
 - Sync SQLAlchemy and sync Redis used for Phase 1 FastAPI health checks — async upgrade deferred to later phase
 - beat_schedule left empty dict in celery_app.py — Phase 2 populates with ingestion schedules
 - WebSocket stub echoes messages; Phase 2 wires Redis pub/sub fan-out into ConnectionManager
+- [Phase 01]: docker-compose.prod.yml intentionally minimal for Phase 1 — resource limits deferred to later phases
+- [Phase 01]: .env committed with empty API keys — Phase 1 does not use live data; keys populated before Phase 2 ingestion
 
 ## Performance Metrics
 
@@ -41,6 +43,7 @@ Phase 1: 2/5 plans complete
 |-------|------|----------|-------|-------|
 | 01 | 01-01 | 118s | 2 | 11 |
 | 01 | 01-02 | 53s | 2 | 10 |
+| 01 | 01-05 | 45s | 2 | 3 |
 
 ## Notes
 
@@ -51,5 +54,5 @@ Phase 1: 2/5 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 01-02-PLAN.md
-- **Timestamp**: 2026-03-24T21:56:32Z
+- **Stopped at**: Completed 01-05-PLAN.md
+- **Timestamp**: 2026-03-25T00:00:00Z

@@ -21,8 +21,8 @@
 
 - [ ] **INGEST-01**: Celery workers ingest yfinance OHLCV + fundamentals for any ticker on demand and on schedule
 - [ ] **INGEST-02**: FRED ingestion worker fetches macro series (CPI, PCE, GDP, unemployment, Fed Funds, yield curve) on 1h schedule
-- [ ] **INGEST-03**: Redis TTL caching enforced per data type (per spec §5 table)
-- [ ] **INGEST-04**: Rate limit token buckets in Redis protect all API sources (Finnhub 60/min, FMP 250/day, Alpha Vantage 25/day, CoinGecko 13/hr)
+- [x] **INGEST-03**: Redis TTL caching enforced per data type (per spec §5 table)
+- [x] **INGEST-04**: Rate limit token buckets in Redis protect all API sources (Finnhub 60/min, FMP 250/day, Alpha Vantage 25/day, CoinGecko 13/hr)
 - [ ] **INGEST-05**: Fallback chain implemented: Live API → Redis cache → TimescaleDB last-known → stale warning → error
 - [x] **INGEST-06**: All ingested data written to TimescaleDB — nothing cache-only
 - [ ] **INGEST-07**: Frankfurter FX rates ingested on 30s schedule for major pairs + GBP crosses

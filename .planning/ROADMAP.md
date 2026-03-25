@@ -60,12 +60,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 02-01: TimescaleDB hypertable schemas — OHLCV, fundamentals, macro, news, screener, factors, dividends, COT
-- [ ] 02-02: Celery worker framework — task registration, beat schedule config, Redis broker setup
-- [ ] 02-03: Redis caching layer — TTL helper, token bucket rate limiter per API source
-- [ ] 02-04: yfinance ingestion worker — OHLCV + fundamentals + dividends, on-demand + scheduled
-- [ ] 02-05: FRED + BLS + US Treasury XML + Frankfurter ingestion workers
-- [ ] 02-06: FastAPI WebSocket broadcaster — Redis pub/sub → connected browser clients
+- [ ] 02-01-PLAN.md — TimescaleDB hypertable schemas + SQLAlchemy models + async engine + test scaffold
+- [ ] 02-02-PLAN.md — Redis TTL cache helper + token bucket rate limiter + ingestion config
+- [ ] 02-03-PLAN.md — yfinance source + Celery ingest tasks + quote REST endpoint with fallback chain
+- [ ] 02-04-PLAN.md — FRED + Frankfurter + Treasury sources + macro/trigger REST endpoints
+- [ ] 02-05-PLAN.md — Celery beat schedule wiring (all 4 ingestion tasks)
+- [ ] 02-06-PLAN.md — WebSocket broadcaster upgrade — Redis pub/sub channel fan-out
 
 ---
 

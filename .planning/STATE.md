@@ -37,7 +37,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Progress
 
-Phase 1: [██████░░░░] 60% — 3/5 plans complete
+Phase 2: [████████░░] 82% — 9/11 plans complete
 
 ## Decisions
 
@@ -57,6 +57,7 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 - [Phase 02-01]: YieldCurve PK is time-only — one canonical US Treasury snapshot per day
 - [Phase 02-03]: Relative imports used in api/routes/quote.py (..database, ..redis_client) — consistent with health.py pattern, works inside api package namespace
 - [Phase 02-03]: ingest_ticker lazy-imported inside get_quote function body to avoid circular import between api and ingestion packages
+- [Phase 02]: beat_schedule uses timedelta intervals (not crontab) — required for sub-minute FX 30s interval
 
 ## Performance Metrics
 
@@ -80,5 +81,5 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 02-04-PLAN.md
-- **Timestamp**: 2026-03-26T06:53:42Z
+- **Stopped at**: Completed 02-05-PLAN.md
+- **Timestamp**: 2026-03-26T07:16:36Z

@@ -2,11 +2,15 @@ import json
 import logging
 from datetime import datetime, timezone
 
+from celery.exceptions import MaxRetriesExceededError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from .celery_app import app
 from .config import SEED_TICKERS, RETRY_COUNTDOWNS
 from .sources.yfinance_source import fetch_ohlcv_and_fundamentals, fetch_ohlcv_batch
+from .sources.fred_source import fetch_fred_series
+from .sources.frankfurter_source import fetch_fx_rates
+from .sources.treasury_source import fetch_treasury_yield_curve
 from api.database import SessionLocal
 from api.redis_client import redis_client
 from cache.ttl import cache_set
@@ -74,6 +78,132 @@ def ingest_ticker(self, ticker: str):
         countdown = RETRY_COUNTDOWNS[min(attempt, len(RETRY_COUNTDOWNS) - 1)]
         logger.error(f"ingest_ticker({ticker}) failed (attempt {attempt}): {exc}")
         raise self.retry(exc=exc, countdown=countdown)
+
+
+@app.task(bind=True, max_retries=3)
+def ingest_macro_batch(self):
+    """Scheduled task: ingest all FRED macro series."""
+    from .config import FRED_SERIES_MAP
+    try:
+        with SessionLocal() as session:
+            for friendly_name, fred_id in FRED_SERIES_MAP.items():
+                try:
+                    observations = fetch_fred_series(fred_id)
+                    rows = [
+                        {"time": obs["date"], "series_id": fred_id,
+                         "value": obs["value"], "source": "fred"}
+                        for obs in observations
+                    ]
+                    if rows:
+                        from models.macro_series import MacroSeries
+                        stmt = pg_insert(MacroSeries.__table__).values(rows)
+                        stmt = stmt.on_conflict_do_nothing(index_elements=["time", "series_id"])
+                        session.execute(stmt)
+                        session.commit()
+                        # Cache latest value
+                        cache_set(redis_client, f"macro:{friendly_name}", {
+                            "series": friendly_name, "fred_id": fred_id,
+                            "latest": observations[0] if observations else None,
+                        }, "macro")
+                        # Publish to Redis pub/sub
+                        redis_client.publish(f"macro:{friendly_name}",
+                            json.dumps({"channel": f"macro:{friendly_name}",
+                                       "series": friendly_name,
+                                       "value": observations[0]["value"] if observations else None,
+                                       "stale": False}, default=str))
+                except Exception as e:
+                    logger.error(f"FRED ingest failed for {fred_id}: {e}")
+    except Exception as exc:
+        attempt = self.request.retries
+        countdown = RETRY_COUNTDOWNS[min(attempt, len(RETRY_COUNTDOWNS) - 1)]
+        try:
+            raise self.retry(exc=exc, countdown=countdown)
+        except MaxRetriesExceededError:
+            logger.error("ingest_macro_batch exhausted retries", exc_info=exc)
+
+
+@app.task(bind=True, max_retries=3)
+def ingest_fx_rates(self):
+    """Scheduled task: ingest Frankfurter FX rates for major pairs + GBP crosses."""
+    try:
+        data = fetch_fx_rates("USD")
+        api_date = data.get("date", "")
+        try:
+            row_time = datetime.fromisoformat(api_date).replace(tzinfo=timezone.utc)
+        except (ValueError, TypeError):
+            row_time = datetime.now(timezone.utc)
+
+        rows = []
+        for quote_currency, rate in data.get("rates", {}).items():
+            rows.append({
+                "time": row_time,
+                "base": "USD",
+                "quote": quote_currency,
+                "rate": rate,
+                "source": "frankfurter",
+            })
+
+        if rows:
+            from models.fx_rate import FXRate
+            with SessionLocal() as session:
+                stmt = pg_insert(FXRate.__table__).values(rows)
+                stmt = stmt.on_conflict_do_nothing(index_elements=["time", "base", "quote"])
+                session.execute(stmt)
+                session.commit()
+
+            # Cache + publish per pair
+            for row in rows:
+                pair_key = f"{row['base']}{row['quote']}"
+                msg = {"channel": f"fx:{pair_key}", "base": row["base"],
+                       "quote": row["quote"], "rate": float(row["rate"]),
+                       "timestamp": row_time.isoformat(), "stale": False}
+                cache_set(redis_client, f"fx:{pair_key}", msg, "fx")
+                redis_client.publish(f"fx:{pair_key}", json.dumps(msg, default=str))
+    except Exception as exc:
+        attempt = self.request.retries
+        countdown = RETRY_COUNTDOWNS[min(attempt, len(RETRY_COUNTDOWNS) - 1)]
+        try:
+            raise self.retry(exc=exc, countdown=countdown)
+        except MaxRetriesExceededError:
+            logger.error("ingest_fx_rates exhausted retries", exc_info=exc)
+
+
+@app.task(bind=True, max_retries=3)
+def ingest_treasury_curve(self):
+    """Scheduled task: ingest US Treasury XML yield curve."""
+    try:
+        curve_rows = fetch_treasury_yield_curve()
+        if curve_rows:
+            from models.yield_curve import YieldCurve
+            db_rows = []
+            for row in curve_rows:
+                db_row = {"time": row["date"], "source": "us_treasury"}
+                for field in ["bc_1month", "bc_2month", "bc_3month", "bc_6month",
+                              "bc_1year", "bc_2year", "bc_3year", "bc_5year",
+                              "bc_7year", "bc_10year", "bc_20year", "bc_30year"]:
+                    db_row[field] = row.get(field)
+                db_rows.append(db_row)
+
+            with SessionLocal() as session:
+                stmt = pg_insert(YieldCurve.__table__).values(db_rows)
+                stmt = stmt.on_conflict_do_nothing(index_elements=["time"])
+                session.execute(stmt)
+                session.commit()
+
+            # Cache latest curve
+            latest = curve_rows[-1] if curve_rows else None
+            if latest:
+                cache_set(redis_client, "yield_curve:latest", {
+                    "date": latest["date"].isoformat() if hasattr(latest["date"], "isoformat") else str(latest["date"]),
+                    **{k: v for k, v in latest.items() if k != "date"}
+                }, "yield_curve")
+    except Exception as exc:
+        attempt = self.request.retries
+        countdown = RETRY_COUNTDOWNS[min(attempt, len(RETRY_COUNTDOWNS) - 1)]
+        try:
+            raise self.retry(exc=exc, countdown=countdown)
+        except MaxRetriesExceededError:
+            logger.error("ingest_treasury_curve exhausted retries", exc_info=exc)
 
 
 def _upsert_result(session, result: dict) -> None:

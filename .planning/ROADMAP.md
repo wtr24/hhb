@@ -63,7 +63,7 @@ Plans:
 - [x] 02-01-PLAN.md — TimescaleDB hypertable schemas + SQLAlchemy models + async engine + test scaffold
 - [x] 02-02-PLAN.md — Redis TTL cache helper + token bucket rate limiter + ingestion config
 - [x] 02-03-PLAN.md — yfinance source + Celery ingest tasks + quote REST endpoint with fallback chain
-- [ ] 02-04-PLAN.md — FRED + Frankfurter + Treasury sources + macro/trigger REST endpoints
+- [x] 02-04-PLAN.md — FRED + Frankfurter + Treasury sources + macro/trigger REST endpoints
 - [ ] 02-05-PLAN.md — Celery beat schedule wiring (all 4 ingestion tasks)
 - [ ] 02-06-PLAN.md — WebSocket broadcaster upgrade — Redis pub/sub channel fan-out
 
@@ -303,7 +303,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Bootstrap | 3/5 | In Progress|  |
-| 2. Data Ingestion Foundation | 0/6 | Not started | - |
+| 2. Data Ingestion Foundation | 4/6 | In Progress|  |
 | 3. Equity Overview | 0/6 | Not started | - |
 | 4. Technical Analysis Engine | 0/7 | Not started | - |
 | 5. Macro Dashboard | 0/6 | Not started | - |

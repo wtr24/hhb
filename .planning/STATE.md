@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-last_updated: "2026-03-25T21:08:26.861Z"
+status: Executing Phase 02
+last_updated: "2026-03-26T06:58:26.052Z"
 progress:
   total_phases: 12
   completed_phases: 1
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 9
 ---
 
 # Project State
@@ -18,7 +18,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Unified zero-cost research terminal — pull up any instrument instantly with live quotes, charts, indicators, macro context, news sentiment, and positioning data
-**Current focus:** Phase 01 — infrastructure-bootstrap
+**Current focus:** Phase 02 — data-ingestion-foundation
 
 ## Current Status
 
@@ -57,7 +57,11 @@ Phase 2: [████████░░] 82% — 9/11 plans complete
 - [Phase 02-01]: YieldCurve PK is time-only — one canonical US Treasury snapshot per day
 - [Phase 02-03]: Relative imports used in api/routes/quote.py (..database, ..redis_client) — consistent with health.py pattern, works inside api package namespace
 - [Phase 02-03]: ingest_ticker lazy-imported inside get_quote function body to avoid circular import between api and ingestion packages
+- [Phase 02]: SessionLocal context-manager pattern used for Celery tasks instead of plan-suggested _get_sync_session() helper — consistent with existing tasks.py
+- [Phase 02]: Lazy model imports inside Celery tasks (from models.X import Y) used in 02-04 to avoid circular imports at module load time
 - [Phase 02]: beat_schedule uses timedelta intervals (not crontab) — required for sub-minute FX 30s interval
+- [Phase 02-06]: psubscribe used for all quotes:*/macro:*/fx:* channels with pmessage filter per D-10 and Pitfall 4
+- [Phase 02-06]: lifespan manages single async Redis pub/sub task with task.cancel()+aclose() shutdown per Pitfall 8
 
 ## Performance Metrics
 
@@ -71,6 +75,9 @@ Phase 2: [████████░░] 82% — 9/11 plans complete
 | 02 | 02-01 | 3min | 2 | 11 |
 | 02 | 02-02 | 2min | 1 | 7 |
 | 02 | 02-03 | 2min | 2 | 7 |
+| Phase 02 P04 | 216 | 2 tasks | 10 files |
+| Phase 02 P02-05 | 58s | 1 tasks | 2 files |
+| Phase 02 P06 | 73 | 2 tasks | 3 files |
 
 ## Notes
 

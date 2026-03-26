@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Status
 
 - **Phase**: 2 — Data Ingestion Foundation
-- **Current Plan**: 2 of N in Phase 2
-- **Last action**: Completed 02-02 (Redis TTL cache + token bucket rate limiter + ingestion config)
+- **Current Plan**: 3 of N in Phase 2
+- **Last action**: Completed 02-03 (yfinance ingestion pipeline + GET /api/quote/{ticker} with fallback chain)
 - **Next action**: Continue Phase 2 remaining plans
 
 ## Milestone
@@ -55,6 +55,8 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 - [Phase 02-01]: Added async engine (postgresql+asyncpg://) alongside sync engine in database.py — sync preserved for Alembic/Celery
 - [Phase 02-01]: Compression policies for all 5 hypertables added in migration 0002 (30-day interval)
 - [Phase 02-01]: YieldCurve PK is time-only — one canonical US Treasury snapshot per day
+- [Phase 02-03]: Relative imports used in api/routes/quote.py (..database, ..redis_client) — consistent with health.py pattern, works inside api package namespace
+- [Phase 02-03]: ingest_ticker lazy-imported inside get_quote function body to avoid circular import between api and ingestion packages
 
 ## Performance Metrics
 
@@ -67,6 +69,7 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 | 01 | 01-05 | 45s | 2 | 3 |
 | 02 | 02-01 | 3min | 2 | 11 |
 | 02 | 02-02 | 2min | 1 | 7 |
+| 02 | 02-03 | 2min | 2 | 7 |
 
 ## Notes
 
@@ -77,5 +80,5 @@ Phase 1: [██████░░░░] 60% — 3/5 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 02-02-PLAN.md
-- **Timestamp**: 2026-03-25T21:07:20Z
+- **Stopped at**: Completed 02-03-PLAN.md
+- **Timestamp**: 2026-03-26T06:44:38Z

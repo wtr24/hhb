@@ -20,32 +20,16 @@ def client():
 
 
 class TestEquityStubs:
-    """Wave 0 stub tests: fundamentals, short-interest, insiders, options return 501."""
-
-    def test_fundamentals_endpoint_registered(self, client):
-        """GET /api/equity/fundamentals/{ticker} endpoint must exist (returns 501 stub)."""
-        response = client.get("/api/equity/fundamentals/AAPL")
-        assert response.status_code == 501
-
-    def test_short_interest_endpoint_registered(self, client):
-        """GET /api/equity/short-interest/{ticker} endpoint must exist (returns 501 stub)."""
-        response = client.get("/api/equity/short-interest/AAPL")
-        assert response.status_code == 501
-
-    def test_insiders_endpoint_registered(self, client):
-        """GET /api/equity/insiders/{ticker} endpoint must exist (returns 501 stub)."""
-        response = client.get("/api/equity/insiders/AAPL")
-        assert response.status_code == 501
+    """Wave 0 stub tests: only options remains at 501 (Wave 2 implemented fundamentals/short-interest/insiders)."""
 
     def test_options_endpoint_registered(self, client):
-        """GET /api/equity/options/{ticker} endpoint must exist (returns 501 stub)."""
+        """GET /api/equity/options/{ticker} endpoint must exist (returns 501 stub until Wave 3)."""
         response = client.get("/api/equity/options/AAPL")
         assert response.status_code == 501
 
     def test_lse_ticker_no_crash(self, client):
         """LSE tickers with .L suffix must not crash any endpoint (no 500 errors)."""
         lse_endpoints = [
-            "/api/equity/fundamentals/LLOY.L",
             "/api/equity/short-interest/LLOY.L",
             "/api/equity/insiders/LLOY.L",
             "/api/equity/options/LLOY.L",
@@ -269,15 +253,45 @@ class TestNews:
         assert data["stale"] is True
 
 
-# --- Wave 2 tests (implement in Wave 2: short interest, insiders) ---
+# --- Wave 2 tests (fundamentals, short interest, insiders) ---
 
-@pytest.mark.skip(reason="Stub — implement in Wave 2")
 class TestFundamentalsShape:
-    """Test fundamentals endpoint shape once Wave 2 implements it."""
+    """Test fundamentals endpoint shape (Wave 2 implemented in plan 03-04)."""
 
     def test_fundamentals_shape(self, client):
-        """GET /api/equity/fundamentals/AAPL returns expected keys including ROE."""
-        response = client.get("/api/equity/fundamentals/AAPL")
+        """GET /api/equity/fundamentals/AAPL returns 5 metrics including ROE."""
+        from unittest.mock import AsyncMock
+        from api.main import app
+        from api.database import get_async_db
+
+        mock_fund = MagicMock()
+        mock_fund.pe_ratio = 28.4
+        mock_fund.ev_ebitda = 21.2
+        mock_fund.roe = 0.45
+        mock_fund.debt_equity = 1.73
+        mock_fund.market_cap = 2940000000000
+
+        mock_scalar = MagicMock()
+        mock_scalar.scalar_one_or_none.return_value = mock_fund
+
+        mock_db = MagicMock()
+        mock_db.execute = AsyncMock(return_value=mock_scalar)
+
+        async def override_db():
+            return mock_db
+
+        with patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+
+            app.dependency_overrides[get_async_db] = override_db
+
+            try:
+                response = client.get("/api/equity/fundamentals/AAPL")
+            finally:
+                app.dependency_overrides.clear()
+
         assert response.status_code == 200
         data = response.json()
         assert "pe_ratio" in data
@@ -285,41 +299,167 @@ class TestFundamentalsShape:
         assert "roe" in data
         assert "debt_equity" in data
         assert "market_cap" in data
+        assert data["ticker"] == "AAPL"
 
+    def test_fundamentals_no_db_data_falls_back_to_yfinance(self, client):
+        """When no DB row exists, fundamentals uses yfinance for ROE."""
+        from unittest.mock import AsyncMock
+        from api.main import app
+        from api.database import get_async_db
 
-@pytest.mark.skip(reason="Stub — implement in Wave 2")
-class TestShortInterest:
-    """Test short interest endpoint once Wave 2 implements it."""
+        mock_scalar = MagicMock()
+        mock_scalar.scalar_one_or_none.return_value = None  # No DB row
 
-    def test_short_interest(self, client):
-        """GET /api/equity/short-interest/AAPL returns structured short interest data."""
-        response = client.get("/api/equity/short-interest/AAPL")
+        mock_db = MagicMock()
+        mock_db.execute = AsyncMock(return_value=mock_scalar)
+
+        mock_info = {"returnOnEquity": 0.45}
+        mock_ticker_obj = MagicMock()
+        mock_ticker_obj.info = mock_info
+
+        async def override_db():
+            return mock_db
+
+        with patch("api.routes.equity.get_redis") as mock_get_redis, \
+             patch("api.routes.equity.yf.Ticker") as mock_yf:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_yf.return_value = mock_ticker_obj
+
+            app.dependency_overrides[get_async_db] = override_db
+
+            try:
+                response = client.get("/api/equity/fundamentals/AAPL")
+            finally:
+                app.dependency_overrides.clear()
+
         assert response.status_code == 200
         data = response.json()
-        assert "short_interest" in data or "short_percent_float" in data
+        assert "roe" in data
+        assert data["roe"] == pytest.approx(0.45)
+        assert data["stale"] is True  # No DB row means stale
 
-    def test_short_interest_lse_note(self, client):
-        """LSE tickers return US-only note or 404 for short interest."""
+
+class TestShortInterest:
+    """Test short interest endpoint (Wave 2 implemented in plan 03-04)."""
+
+    def test_short_interest(self, client):
+        """GET /api/equity/short-interest/AAPL returns pct_float ~10.0."""
+        mock_si_data = {
+            "shortInterest": 100000,
+            "sharesOutstanding": 1000000,
+            "date": "2026-01-01",
+        }
+        with patch("api.routes.equity.fetch_short_interest") as mock_fetch, \
+             patch("api.routes.equity.get_redis") as mock_get_redis, \
+             patch.dict("os.environ", {"FINNHUB_API_KEY": "test_key"}):
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_fetch.return_value = mock_si_data
+
+            response = client.get("/api/equity/short-interest/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is True
+        assert "pct_float" in data
+        assert data["pct_float"] == pytest.approx(10.0, rel=1e-3)
+        assert data["source"] == "finnhub"
+
+    def test_short_interest_lse_returns_us_only(self, client):
+        """LSE ticker LLOY.L returns available=False with US-only message."""
         response = client.get("/api/equity/short-interest/LLOY.L")
-        assert response.status_code in (200, 404)
-        if response.status_code == 200:
-            data = response.json()
-            assert "error" in data or "note" in data or "short_interest" in data
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is False
+        assert "US tickers only" in data.get("message", "")
+
+    def test_short_interest_index_returns_us_only(self, client):
+        """Index ticker ^FTSE returns available=False."""
+        response = client.get("/api/equity/short-interest/^FTSE")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is False
 
 
-@pytest.mark.skip(reason="Stub — implement in Wave 2")
+class TestLseTicker:
+    """Test LSE ticker handling for Wave 2 endpoints (plan 03-04)."""
+
+    def test_short_interest_lse(self, client):
+        """GET /api/equity/short-interest/LLOY.L returns available: False."""
+        response = client.get("/api/equity/short-interest/LLOY.L")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is False
+
+    def test_insiders_lse(self, client):
+        """GET /api/equity/insiders/LLOY.L returns available: False."""
+        response = client.get("/api/equity/insiders/LLOY.L")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is False
+
+
 class TestInsiders:
-    """Test insider clustering endpoint once Wave 2 implements it."""
+    """Test insider clustering endpoint (Wave 2 implemented in plan 03-04)."""
 
     def test_insiders_structure(self, client):
         """GET /api/equity/insiders/AAPL returns buy/sell counts and clusters."""
-        response = client.get("/api/equity/insiders/AAPL")
+        mock_transactions = [
+            {
+                "name": "Tim Cook",
+                "share": 1000,
+                "change": 1000,
+                "filingDate": "2026-01-05",
+                "transactionDate": "2026-01-04",
+                "transactionCode": "P",
+                "transactionPrice": 185.0,
+                "isDerivative": False,
+            },
+            {
+                "name": "Luca Maestri",
+                "share": 500,
+                "change": 500,
+                "filingDate": "2026-01-06",
+                "transactionDate": "2026-01-05",
+                "transactionCode": "P",
+                "transactionPrice": 186.0,
+                "isDerivative": False,
+            },
+            {
+                "name": "Jeff Williams",
+                "share": 2000,
+                "change": -2000,
+                "filingDate": "2026-01-10",
+                "transactionDate": "2026-01-09",
+                "transactionCode": "S",
+                "transactionPrice": 190.0,
+                "isDerivative": False,
+            },
+        ]
+        with patch("api.routes.equity.fetch_insider_transactions") as mock_fetch, \
+             patch("api.routes.equity.get_redis") as mock_get_redis, \
+             patch.dict("os.environ", {"FINNHUB_API_KEY": "test_key"}):
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_fetch.return_value = mock_transactions
+
+            response = client.get("/api/equity/insiders/AAPL")
+
         assert response.status_code == 200
         data = response.json()
+        assert data["available"] is True
         assert "buy_count" in data
         assert "sell_count" in data
         assert "clusters" in data
         assert "multi_insider" in data
+        assert data["buy_count"] == 2
+        assert data["sell_count"] == 1
+        assert data["multi_insider"] is True  # 2 buyers in same window
+        assert data["source"] == "finnhub"
 
 
 # --- Wave 3 tests (implement in Wave 3: options chain) ---

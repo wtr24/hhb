@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 03
-last_updated: "2026-03-28T21:24:12.315Z"
+last_updated: "2026-03-28T21:39:33.765Z"
 progress:
   total_phases: 12
   completed_phases: 2
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # Project State
@@ -82,6 +82,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 03-04]: Fundamentals endpoint supplements DB roe with yfinance returnOnEquity when null — single source of truth
 - [Phase 03-04]: Short interest and insiders use macro TTL (1h) — corporate data updates infrequently, cache hit rate more important than freshness
 - [Phase 03-04]: FundamentalsPanel multiplies ROE by 100 only when absolute value <= 5 — handles both decimal (0.45) and percentage (45) input from API
+- [Phase 03-05]: Risk-free rate hardcoded at 0.045 with TODO comment — yield_curve table query deferred to Phase 8
+- [Phase 03-05]: IV rank uses cross-strike median IV percentile (not 52-week history) — 52-week rank requires historical option data storage (Phase 8 screener)
+- [Phase 03-05]: IVSurface uses HTML Canvas (not charting library) — compact heatmap strip above options table, no D3/recharts dependency
 
 ## Performance Metrics
 
@@ -102,6 +105,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 03 P03-02 | 248 | 2 tasks | 6 files |
 | Phase 03 P03-03 | 199 | 2 tasks | 7 files |
 | Phase 03 P03-04 | 290s | 2 tasks | 6 files |
+| Phase 03 P05 | 412 | 2 tasks | 4 files |
 
 ## Notes
 

@@ -5,7 +5,12 @@ import os
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://hhbfin:changeme@timescaledb:5432/hhbfin")
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+# Sync engine requires psycopg2 driver — strip +asyncpg if present
+SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+# Async engine requires asyncpg driver — ensure it's present
+ASYNC_DATABASE_URL = SYNC_DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+
+engine = create_engine(SYNC_DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():
@@ -16,7 +21,6 @@ def get_db():
         db.close()
 
 
-ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 async_engine = create_async_engine(ASYNC_DATABASE_URL, pool_pre_ping=True)
 AsyncSessionLocal = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 

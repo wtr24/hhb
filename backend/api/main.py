@@ -10,6 +10,8 @@ from .websocket import router as ws_router, manager
 from .routes.quote import router as quote_router
 from .routes.macro import router as macro_router
 from .routes.ingest import router as ingest_router
+from .routes.fx import router as fx_router
+from .routes.equity import router as equity_router
 from .redis_client import get_async_redis_url
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,8 @@ app.include_router(ws_router, tags=["websocket"])
 app.include_router(quote_router)
 app.include_router(macro_router)
 app.include_router(ingest_router)
+app.include_router(fx_router)
+app.include_router(equity_router)
 
 
 @app.get("/")

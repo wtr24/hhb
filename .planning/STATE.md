@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 02
-last_updated: "2026-03-28T10:50:22.258Z"
+last_updated: "2026-03-28T12:00:00.000Z"
 progress:
   total_phases: 12
   completed_phases: 2
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 12
+  completed_plans: 12
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Status
 
 - **Phase**: 2 — Data Ingestion Foundation
-- **Current Plan**: 3 of N in Phase 2
-- **Last action**: Completed 02-03 (yfinance ingestion pipeline + GET /api/quote/{ticker} with fallback chain)
-- **Next action**: Continue Phase 2 remaining plans
+- **Current Plan**: 02-07 complete — Phase 02 all plans done
+- **Last action**: Completed 02-07 (wired check_rate_limit into all 5 ingestion tasks; yfinance added to RATE_LIMITS)
+- **Next action**: Begin Phase 03
 
 ## Milestone
 
@@ -37,7 +37,12 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Progress
 
-Phase 2: [████████░░] 82% — 9/11 plans complete
+Phase 2: [██████████] 100% — 12/12 plans complete
+
+## Gap Closure
+
+- **02-07** — INGEST-04: Rate limiter wired into ingestion tasks — **complete** (2026-03-28)
+  - Files: `backend/cache/rate_limiter.py`, `backend/ingestion/tasks.py`
 
 ## Decisions
 
@@ -62,6 +67,9 @@ Phase 2: [████████░░] 82% — 9/11 plans complete
 - [Phase 02]: beat_schedule uses timedelta intervals (not crontab) — required for sub-minute FX 30s interval
 - [Phase 02-06]: psubscribe used for all quotes:*/macro:*/fx:* channels with pmessage filter per D-10 and Pitfall 4
 - [Phase 02-06]: lifespan manages single async Redis pub/sub task with task.cancel()+aclose() shutdown per Pitfall 8
+- [Phase 02-07]: Rate limit check in tasks.py fires once per task invocation (not per-series in FRED loop) — avoids consuming tokens for every series iteration
+- [Phase 02-07]: frankfurter and us_treasury guarded via check_rate_limit even without RATE_LIMITS entries — unknown sources pass through (returns True), wiring is consistent
+- [Phase 02-07]: yfinance added to RATE_LIMITS at 60/60s (conservative); fetch_ohlcv_batch time.sleep(0.5) retained as secondary per-request throttle
 
 ## Performance Metrics
 
@@ -88,5 +96,5 @@ Phase 2: [████████░░] 82% — 9/11 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 02-05-PLAN.md
-- **Timestamp**: 2026-03-26T07:16:36Z
+- **Stopped at**: Completed 02-07 (INGEST-04 gap closure — rate limiter wired)
+- **Timestamp**: 2026-03-28T12:30:00Z

@@ -9,7 +9,7 @@
 ## Phases
 
 - [ ] **Phase 1: Infrastructure Bootstrap** — Docker Compose stack, FastAPI skeleton, React/Vite Bloomberg UI, dev tooling
-- [ ] **Phase 2: Data Ingestion Foundation** — TimescaleDB schemas, Celery workers, Redis caching, yfinance/FRED/Frankfurter pipelines
+- [x] **Phase 2: Data Ingestion Foundation** — TimescaleDB schemas, Celery workers, Redis caching, yfinance/FRED/Frankfurter pipelines
 - [ ] **Phase 3: Equity Overview** — Live quotes, multi-timeframe charts, fundamentals, short interest, insider transactions, options chain
 - [ ] **Phase 4: Technical Analysis Engine** — 60+ indicators, 60+ candlestick patterns, chart patterns, Fibonacci, Elliott Wave, statistical significance layer
 - [ ] **Phase 5: Macro Dashboard** — US+UK yield curves, CPI/GDP/unemployment, VIX regime classifier, DIY Fear & Greed
@@ -64,8 +64,9 @@ Plans:
 - [x] 02-02-PLAN.md — Redis TTL cache helper + token bucket rate limiter + ingestion config
 - [x] 02-03-PLAN.md — yfinance source + Celery ingest tasks + quote REST endpoint with fallback chain
 - [x] 02-04-PLAN.md — FRED + Frankfurter + Treasury sources + macro/trigger REST endpoints
-- [ ] 02-05-PLAN.md — Celery beat schedule wiring (all 4 ingestion tasks)
-- [ ] 02-06-PLAN.md — WebSocket broadcaster upgrade — Redis pub/sub channel fan-out
+- [x] 02-05-PLAN.md — Celery beat schedule wiring (all 4 ingestion tasks)
+- [x] 02-06-PLAN.md — WebSocket broadcaster upgrade — Redis pub/sub channel fan-out
+- [x] 02-07-PLAN.md — Wire rate limiter into ingestion tasks (gap closure: INGEST-04)
 
 ---
 
@@ -84,12 +85,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 03-01: Finnhub WebSocket integration — live quote stream, 15s refresh, Redis pub/sub broadcast
-- [ ] 03-02: Multi-timeframe candlestick charts — lightweight-charts integration, 4-panel view (W/D/4H/1H)
-- [ ] 03-03: Earnings + dividend markers on chart — yfinance + FMP data, vertical line annotations
-- [ ] 03-04: Fundamentals panel — P/E, EV/EBITDA, ROE, Debt/Equity, Market Cap (FMP + yfinance, 24h cache)
-- [ ] 03-05: Short interest + insider transaction clustering — Finnhub API, 10b5-1 filter, clustering detection
-- [ ] 03-06: Options chain — Black-Scholes pricer, Greeks, IV surface, IV percentile rank; Equity Overview frontend assembly
+- [ ] 03-01-PLAN.md — Wave 0: scipy + FX endpoint + OHLCV interval column + Black-Scholes + insider analysis + test scaffold
+- [ ] 03-02-PLAN.md — Wave 1: Finnhub WebSocket live quotes + earnings/dividends/news REST endpoints
+- [ ] 03-03-PLAN.md — Wave 2: Multi-timeframe candlestick charts (lightweight-charts v5, 4-panel W/D/4H/1H, expand/collapse)
+- [ ] 03-04-PLAN.md — Wave 2: Fundamentals + short interest + insider clustering panels (backend + frontend)
+- [ ] 03-05-PLAN.md — Wave 3: Options chain (Black-Scholes Greeks, IV surface heatmap, IV percentile rank)
+- [ ] 03-06-PLAN.md — Wave 3: EquityModule Bloomberg grid assembly + ticker command bar + GBP toggle + App.tsx wiring
 
 ---
 
@@ -303,8 +304,8 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Bootstrap | 3/5 | In Progress|  |
-| 2. Data Ingestion Foundation | 4/6 | In Progress|  |
-| 3. Equity Overview | 0/6 | Not started | - |
+| 2. Data Ingestion Foundation | 7/7 | Complete | 2026-03-28 |
+| 3. Equity Overview | 0/6 | Planned | - |
 | 4. Technical Analysis Engine | 0/7 | Not started | - |
 | 5. Macro Dashboard | 0/6 | Not started | - |
 | 6. Forex, Commodities & Crypto | 0/6 | Not started | - |

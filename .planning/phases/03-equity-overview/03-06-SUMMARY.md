@@ -66,7 +66,7 @@ completed: 2026-03-28
 | Metric | Value |
 |--------|-------|
 | Duration | ~148s |
-| Tasks completed | 2/3 (Task 3 is human-verify checkpoint) |
+| Tasks completed | 3/3 |
 | Files created | 4 |
 | Files modified | 1 |
 
@@ -120,6 +120,7 @@ completed: 2026-03-28
 
 1. **Task 1: TickerCommandBar + QuoteBar + GBPToggle** — `0938c3d` (feat)
 2. **Task 2: EquityModule assembly + App.tsx wiring** — `51179f3` (feat)
+3. **Task 3: Visual verification of Equity module** — human-verify checkpoint approved by user
 
 ## Deviations from Plan
 
@@ -146,10 +147,6 @@ None — plan executed exactly as written.
   - App.tsx → EquityModule (conditional render `activeTab === "EQUITY"`)
   - GBPToggle → /api/fx/USD/GBP (via `fetch('/api/fx/USD/GBP')` in EquityModule)
 
-## Awaiting
-
-Task 3 (checkpoint:human-verify) — visual approval of the complete Bloomberg Equity module in browser.
-
 ---
 *Phase: 03-equity-overview*
-*Completed: 2026-03-28 (Tasks 1-2 automated; Task 3 awaiting human verify)*
+*Completed: 2026-03-28*

@@ -1,0 +1,138 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: hhb-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hhb
+      POSTGRES_USER: hhb
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hhb}
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hhb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: hhb-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: wtr24dev/hhb-backend:latest
+    container_name: hhb-backend
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://hhb:${DB_PASSWORD:-hhb}@timescaledb:5432/hhb
+      - REDIS_URL=redis://redis:6379
+      - FRED_API_KEY=${FRED_API_KEY:-}
+      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
+      - FMP_API_KEY=${FMP_API_KEY:-}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - T212_API_KEY=${T212_API_KEY:-}
+    mem_limit: 2g
+    cpus: '2.0'
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn api.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  beat:
+    image: wtr24dev/hhb-backend:latest
+    container_name: hhb-beat
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://hhb:${DB_PASSWORD:-hhb}@timescaledb:5432/hhb
+      - REDIS_URL=redis://redis:6379
+      - FRED_API_KEY=${FRED_API_KEY:-}
+      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
+      - FMP_API_KEY=${FMP_API_KEY:-}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - T212_API_KEY=${T212_API_KEY:-}
+    mem_limit: 512m
+    cpus: '0.5'
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A ingestion.celery_app beat --loglevel=info
+
+  worker:
+    image: wtr24dev/hhb-backend:latest
+    container_name: hhb-worker
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://hhb:${DB_PASSWORD:-hhb}@timescaledb:5432/hhb
+      - REDIS_URL=redis://redis:6379
+      - FRED_API_KEY=${FRED_API_KEY:-}
+      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
+      - FMP_API_KEY=${FMP_API_KEY:-}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - T212_API_KEY=${T212_API_KEY:-}
+    mem_limit: 1g
+    cpus: '1.0'
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A ingestion.celery_app worker --loglevel=info
+
+  frontend:
+    image: wtr24dev/hhb-frontend:latest
+    container_name: hhb-frontend
+    restart: unless-stopped
+    ports:
+      - "3009:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://192.168.0.18:8000
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: hhb-watchtower
+    restart: unless-stopped
+    command: --interval 300 --cleanup --label-enable
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  redis_data:
+  timescale_data:

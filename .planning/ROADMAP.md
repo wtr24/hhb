@@ -10,7 +10,7 @@
 
 - [ ] **Phase 1: Infrastructure Bootstrap** — Docker Compose stack, FastAPI skeleton, React/Vite Bloomberg UI, dev tooling
 - [x] **Phase 2: Data Ingestion Foundation** — TimescaleDB schemas, Celery workers, Redis caching, yfinance/FRED/Frankfurter pipelines
-- [ ] **Phase 3: Equity Overview** — Live quotes, multi-timeframe charts, fundamentals, short interest, insider transactions, options chain
+- [x] **Phase 3: Equity Overview** — Live quotes, multi-timeframe charts, fundamentals, short interest, insider transactions, options chain (completed 2026-03-28)
 - [ ] **Phase 4: Technical Analysis Engine** — 60+ indicators, 60+ candlestick patterns, chart patterns, Fibonacci, Elliott Wave, statistical significance layer
 - [ ] **Phase 5: Macro Dashboard** — US+UK yield curves, CPI/GDP/unemployment, VIX regime classifier, DIY Fear & Greed
 - [ ] **Phase 6: Forex, Commodities & Crypto** — FX pairs + COT overlay, commodity prices + EIA, Binance WebSocket + CoinGecko crypto desk
@@ -87,10 +87,10 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — Wave 0: scipy + FX endpoint + OHLCV interval column + Black-Scholes + insider analysis + test scaffold
 - [x] 03-02-PLAN.md — Wave 1: Finnhub WebSocket live quotes + earnings/dividends/news REST endpoints
-- [ ] 03-03-PLAN.md — Wave 2: Multi-timeframe candlestick charts (lightweight-charts v5, 4-panel W/D/4H/1H, expand/collapse)
+- [x] 03-03-PLAN.md — Wave 2: Multi-timeframe candlestick charts (lightweight-charts v5, 4-panel W/D/4H/1H, expand/collapse)
 - [x] 03-04-PLAN.md — Wave 2: Fundamentals + short interest + insider clustering panels (backend + frontend)
-- [ ] 03-05-PLAN.md — Wave 3: Options chain (Black-Scholes Greeks, IV surface heatmap, IV percentile rank)
-- [ ] 03-06-PLAN.md — Wave 3: EquityModule Bloomberg grid assembly + ticker command bar + GBP toggle + App.tsx wiring
+- [x] 03-05-PLAN.md — Wave 3: Options chain (Black-Scholes Greeks, IV surface heatmap, IV percentile rank)
+- [x] 03-06-PLAN.md — Wave 3: EquityModule Bloomberg grid assembly + ticker command bar + GBP toggle + App.tsx wiring
 
 ---
 
@@ -305,7 +305,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Bootstrap | 3/5 | In Progress|  |
 | 2. Data Ingestion Foundation | 7/7 | Complete | 2026-03-28 |
-| 3. Equity Overview | 2/6 | In Progress|  |
+| 3. Equity Overview | 6/6 | Complete   | 2026-03-28 |
 | 4. Technical Analysis Engine | 0/7 | Not started | - |
 | 5. Macro Dashboard | 0/6 | Not started | - |
 | 6. Forex, Commodities & Crypto | 0/6 | Not started | - |

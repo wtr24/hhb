@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 03
-last_updated: "2026-03-28T21:39:33.765Z"
+last_updated: "2026-03-28T21:45:59.267Z"
 progress:
   total_phases: 12
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 18
 ---
 
 # Project State
@@ -22,9 +22,9 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Current Status
 
-- **Phase**: 03 — Equity Overview (in progress — 5/6 plans complete)
-- **Last action**: 03-05 complete — Wave 3: options chain endpoint with BS Greeks + OptionsChain table + IVSurface canvas heatmap
-- **Next action**: Execute 03-06 (EquityModule full assembly — wiring all panels into the App shell)
+- **Phase**: 03 — Equity Overview (in progress — 6/6 plans automated; awaiting visual verify checkpoint)
+- **Last action**: 03-06 Tasks 1-2 complete — EquityModule Bloomberg grid, TickerCommandBar, QuoteBar, GBPToggle, App.tsx wired
+- **Next action**: 03-06 Task 3 checkpoint — user visual approval of full Equity module in browser
 
 ## Milestone
 
@@ -85,6 +85,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 03-05]: Risk-free rate hardcoded at 0.045 with TODO comment — yield_curve table query deferred to Phase 8
 - [Phase 03-05]: IV rank uses cross-strike median IV percentile (not 52-week history) — 52-week rank requires historical option data storage (Phase 8 screener)
 - [Phase 03-05]: IVSurface uses HTML Canvas (not charting library) — compact heatmap strip above options table, no D3/recharts dependency
+- [Phase 03-06]: App outer div changed from min-h-screen to h-screen flex flex-col — Bloomberg layout requires fixed viewport height (D-01: nothing scrolls)
+- [Phase 03-06]: GBP rate fetched once on gbpMode=true, cached in gbpRate state — avoids re-fetch on every render, rate stable within session
 
 ## Performance Metrics
 
@@ -106,6 +108,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 03 P03-03 | 199 | 2 tasks | 7 files |
 | Phase 03 P03-04 | 290s | 2 tasks | 6 files |
 | Phase 03 P05 | 412 | 2 tasks | 4 files |
+| Phase 03 P03-06 | 148 | 2 tasks | 5 files |
 
 ## Notes
 
@@ -116,5 +119,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 03-05 (Wave 3 — options chain endpoint with BS Greeks + OptionsChain/IVSurface components)
-- **Timestamp**: 2026-03-28T22:30:00Z
+- **Stopped at**: 03-06 Tasks 1-2 complete (EquityModule full assembly); Task 3 human-verify checkpoint reached
+- **Timestamp**: 2026-03-28T21:44:00Z

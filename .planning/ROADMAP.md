@@ -88,7 +88,7 @@ Plans:
 - [x] 03-01-PLAN.md — Wave 0: scipy + FX endpoint + OHLCV interval column + Black-Scholes + insider analysis + test scaffold
 - [x] 03-02-PLAN.md — Wave 1: Finnhub WebSocket live quotes + earnings/dividends/news REST endpoints
 - [ ] 03-03-PLAN.md — Wave 2: Multi-timeframe candlestick charts (lightweight-charts v5, 4-panel W/D/4H/1H, expand/collapse)
-- [ ] 03-04-PLAN.md — Wave 2: Fundamentals + short interest + insider clustering panels (backend + frontend)
+- [x] 03-04-PLAN.md — Wave 2: Fundamentals + short interest + insider clustering panels (backend + frontend)
 - [ ] 03-05-PLAN.md — Wave 3: Options chain (Black-Scholes Greeks, IV surface heatmap, IV percentile rank)
 - [ ] 03-06-PLAN.md — Wave 3: EquityModule Bloomberg grid assembly + ticker command bar + GBP toggle + App.tsx wiring
 

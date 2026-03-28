@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 03
-last_updated: "2026-03-28T21:16:38.244Z"
+last_updated: "2026-03-28T21:24:12.315Z"
 progress:
   total_phases: 12
   completed_phases: 2
   total_plans: 18
-  completed_plans: 14
+  completed_plans: 15
 ---
 
 # Project State
@@ -22,9 +22,9 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Current Status
 
-- **Phase**: 03 — Equity Overview (in progress — 2/6 plans complete)
-- **Last action**: 03-02 complete — Wave 1: Finnhub WebSocket client, earnings/dividends/news endpoints (9 new tests, 14 pass)
-- **Next action**: Execute 03-03 (Wave 2: fundamentals, short interest, insiders endpoints)
+- **Phase**: 03 — Equity Overview (in progress — 4/6 plans complete)
+- **Last action**: 03-04 complete — Wave 2: fundamentals/short-interest/insider endpoints + 4 frontend panels (FundamentalsPanel, ShortInterestPanel, InsiderPanel, NewsPanel)
+- **Next action**: Execute 03-05 (Wave 3: options chain endpoint + OptionsPanel)
 
 ## Milestone
 
@@ -75,6 +75,13 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 03-02]: FinnhubWebSocket uses websockets library (v16.0) — already installed, idiomatic async WS library
 - [Phase 03-02]: is_finnhub_ws_eligible() is single source of truth for LSE/index exclusion from Finnhub WS
 - [Phase 03-02]: finnhub_task=None when FINNHUB_API_KEY absent — graceful degradation, Celery yfinance polling covers all tickers
+- [Phase 03]: lightweight-charts v5 addSeries(CandlestickSeries) used — addCandlestickSeries() removed in v5
+- [Phase 03]: createSeriesMarkers() used for earnings/dividend markers — series.setMarkers() removed in v5
+- [Phase 03]: Intraday time format is Unix seconds — lightweight-charts v5 requirement for sub-day intervals
+- [Phase 03]: On-demand yfinance ingest for 1h/4h when no DB rows exist — avoids empty charts on first load
+- [Phase 03-04]: Fundamentals endpoint supplements DB roe with yfinance returnOnEquity when null — single source of truth
+- [Phase 03-04]: Short interest and insiders use macro TTL (1h) — corporate data updates infrequently, cache hit rate more important than freshness
+- [Phase 03-04]: FundamentalsPanel multiplies ROE by 100 only when absolute value <= 5 — handles both decimal (0.45) and percentage (45) input from API
 
 ## Performance Metrics
 
@@ -93,6 +100,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 02 P06 | 73 | 2 tasks | 3 files |
 | Phase 03 P03-01 | 25 | 2 tasks | 16 files |
 | Phase 03 P03-02 | 248 | 2 tasks | 6 files |
+| Phase 03 P03-03 | 199 | 2 tasks | 7 files |
+| Phase 03 P03-04 | 290s | 2 tasks | 6 files |
 
 ## Notes
 
@@ -103,5 +112,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 03-02 (Wave 1 — Finnhub WS client, earnings/dividends/news endpoints, Wave 1 tests)
-- **Timestamp**: 2026-03-28T21:15:34Z
+- **Stopped at**: Completed 03-04 (Wave 2 — fundamentals/short-interest/insider backend + 4 frontend panels)
+- **Timestamp**: 2026-03-28T22:24:11Z

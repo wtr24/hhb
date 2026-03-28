@@ -32,13 +32,13 @@
 ### Equity Overview (Module 1)
 
 - [x] **EQUITY-01**: Live quote (bid/ask/last/volume) displayed with 15s refresh via Finnhub WebSocket
-- [ ] **EQUITY-02**: Multi-timeframe chart view — same instrument displayed simultaneously on Weekly / Daily / 4H / 1H
-- [ ] **EQUITY-03**: Candlestick chart with timeframe selector (1D / 1W / 1M / 1Y / 5Y) via lightweight-charts
+- [x] **EQUITY-02**: Multi-timeframe chart view — same instrument displayed simultaneously on Weekly / Daily / 4H / 1H
+- [x] **EQUITY-03**: Candlestick chart with timeframe selector (1D / 1W / 1M / 1Y / 5Y) via lightweight-charts
 - [x] **EQUITY-04**: Earnings dates plotted as vertical markers on price chart (yfinance + FMP)
 - [x] **EQUITY-05**: Dividend ex-dates plotted as markers on price chart
 - [x] **EQUITY-06**: Fundamentals panel — P/E, EV/EBITDA, ROE, Debt/Equity, Market Cap (24h cache)
-- [ ] **EQUITY-07**: Short interest displayed — % float short, short ratio, days to cover (Finnhub)
-- [ ] **EQUITY-08**: Insider transaction clustering — buy/sell ratio, multi-insider detection within 2-week window, 10b5-1 filter
+- [x] **EQUITY-07**: Short interest displayed — % float short, short ratio, days to cover (Finnhub)
+- [x] **EQUITY-08**: Insider transaction clustering — buy/sell ratio, multi-insider detection within 2-week window, 10b5-1 filter
 - [x] **EQUITY-09**: Options chain snapshot with Black-Scholes pricer, Greeks (delta/gamma/vega/theta), IV surface, IV percentile rank
 - [x] **EQUITY-10**: Company news feed via Finnhub REST (5m refresh)
 - [x] **EQUITY-11**: FX-adjusted return view — toggle GBP-adjusted P&L with GBP/USD overlay

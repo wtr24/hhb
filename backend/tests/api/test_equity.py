@@ -20,12 +20,7 @@ def client():
 
 
 class TestEquityStubs:
-    """Wave 0 stub tests: only options remains at 501 (Wave 2 implemented fundamentals/short-interest/insiders)."""
-
-    def test_options_endpoint_registered(self, client):
-        """GET /api/equity/options/{ticker} endpoint must exist (returns 501 stub until Wave 3)."""
-        response = client.get("/api/equity/options/AAPL")
-        assert response.status_code == 501
+    """Wave 0/3 stub tests: all endpoints now implemented (Wave 3 completed options)."""
 
     def test_lse_ticker_no_crash(self, client):
         """LSE tickers with .L suffix must not crash any endpoint (no 500 errors)."""
@@ -462,20 +457,175 @@ class TestInsiders:
         assert data["source"] == "finnhub"
 
 
-# --- Wave 3 tests (implement in Wave 3: options chain) ---
+# --- Wave 3 tests (options chain with Black-Scholes Greeks) ---
 
-@pytest.mark.skip(reason="Stub — implement in Wave 3")
 class TestOptionsChain:
-    """Test options chain endpoint once Wave 3 implements it."""
+    """Test options chain endpoint (Wave 3 implemented in plan 03-05)."""
+
+    def _make_option_df(self):
+        """Build a minimal 3-row options DataFrame matching yfinance column schema."""
+        return pd.DataFrame({
+            "contractSymbol": ["AAPL240425C00095000", "AAPL240425C00100000", "AAPL240425C00105000"],
+            "strike": [95.0, 100.0, 105.0],
+            "lastPrice": [6.10, 2.50, 0.80],
+            "bid": [5.90, 2.40, 0.70],
+            "ask": [6.20, 2.60, 0.90],
+            "volume": [100, 200, 150],
+            "openInterest": [500, 800, 300],
+            "impliedVolatility": [0.25, 0.22, 0.28],
+        })
 
     def test_options_chain(self, client):
-        """GET /api/equity/options/AAPL returns calls and puts structure."""
-        response = client.get("/api/equity/options/AAPL")
+        """GET /api/equity/options/AAPL returns calls/puts with BS Greeks."""
+        calls_df = self._make_option_df()
+        puts_df = self._make_option_df()
+        puts_df["strike"] = [95.0, 100.0, 105.0]
+
+        mock_chain = MagicMock()
+        mock_chain.calls = calls_df
+        mock_chain.puts = puts_df
+
+        mock_ticker = MagicMock()
+        type(mock_ticker).options = PropertyMock(return_value=["2026-04-25", "2026-05-16"])
+        mock_ticker.option_chain.return_value = mock_chain
+        mock_ticker.info = {"currentPrice": 100.0}
+
+        with patch("api.routes.equity.yf.Ticker") as mock_yf, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_yf.return_value = mock_ticker
+
+            response = client.get("/api/equity/options/AAPL")
+
         assert response.status_code == 200
         data = response.json()
+        assert data["available"] is True
         assert "calls" in data
         assert "puts" in data
-        if data["calls"]:
-            contract = data["calls"][0]
-            assert "strike" in contract
-            assert "delta" in contract or "greeks" in contract
+        assert len(data["calls"]) == 3
+        assert len(data["puts"]) == 3
+
+        # Each row must have BS Greeks
+        contract = data["calls"][0]
+        assert "delta" in contract
+        assert "gamma" in contract
+        assert "vega" in contract
+        assert "theta" in contract
+        assert "strike" in contract
+        assert "iv" in contract
+
+    def test_options_chain_greeks_are_numbers(self, client):
+        """BS Greeks must be floats (not None) for valid IV and T > 0."""
+        calls_df = self._make_option_df()
+        puts_df = self._make_option_df()
+
+        mock_chain = MagicMock()
+        mock_chain.calls = calls_df
+        mock_chain.puts = puts_df
+
+        mock_ticker = MagicMock()
+        type(mock_ticker).options = PropertyMock(return_value=["2026-12-19"])
+        mock_ticker.option_chain.return_value = mock_chain
+        mock_ticker.info = {"currentPrice": 100.0}
+
+        with patch("api.routes.equity.yf.Ticker") as mock_yf, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_yf.return_value = mock_ticker
+
+            response = client.get("/api/equity/options/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is True
+        # Delta should be numeric for valid inputs (T>0, sigma>0)
+        for contract in data["calls"]:
+            if contract["delta"] is not None:
+                assert isinstance(contract["delta"], float)
+                assert -1.0 <= contract["delta"] <= 1.0
+
+    def test_options_chain_iv_rank(self, client):
+        """iv_rank must be between 0 and 100."""
+        calls_df = self._make_option_df()
+        puts_df = self._make_option_df()
+
+        mock_chain = MagicMock()
+        mock_chain.calls = calls_df
+        mock_chain.puts = puts_df
+
+        mock_ticker = MagicMock()
+        type(mock_ticker).options = PropertyMock(return_value=["2026-06-20"])
+        mock_ticker.option_chain.return_value = mock_chain
+        mock_ticker.info = {"currentPrice": 100.0}
+
+        with patch("api.routes.equity.yf.Ticker") as mock_yf, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_yf.return_value = mock_ticker
+
+            response = client.get("/api/equity/options/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "iv_rank" in data
+        assert 0.0 <= data["iv_rank"] <= 100.0
+
+    def test_options_chain_iv_surface(self, client):
+        """iv_surface must contain strikes, expiries, and iv_matrix keys."""
+        calls_df = self._make_option_df()
+        puts_df = self._make_option_df()
+
+        mock_chain = MagicMock()
+        mock_chain.calls = calls_df
+        mock_chain.puts = puts_df
+
+        mock_ticker = MagicMock()
+        type(mock_ticker).options = PropertyMock(return_value=["2026-06-20", "2026-07-18"])
+        mock_ticker.option_chain.return_value = mock_chain
+        mock_ticker.info = {"currentPrice": 100.0}
+
+        with patch("api.routes.equity.yf.Ticker") as mock_yf, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_yf.return_value = mock_ticker
+
+            response = client.get("/api/equity/options/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "iv_surface" in data
+        surface = data["iv_surface"]
+        assert "strikes" in surface
+        assert "expiries" in surface
+        assert "iv_matrix" in surface
+
+    def test_lse_ticker_returns_not_available(self, client):
+        """LSE ticker (.L suffix) returns available=False with message."""
+        response = client.get("/api/equity/options/LLOY.L")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is False
+        assert "LSE" in data.get("message", "") or "not available" in data.get("message", "").lower()
+
+    def test_options_yfinance_error_returns_unavailable(self, client):
+        """On yfinance error, options endpoint returns available=False (not 500)."""
+        with patch("api.routes.equity.yf.Ticker") as mock_yf, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_yf.side_effect = Exception("yfinance down")
+
+            response = client.get("/api/equity/options/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["available"] is False

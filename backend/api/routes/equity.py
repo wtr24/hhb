@@ -1,15 +1,16 @@
 """
 Equity-specific REST endpoints.
 
-Wave 0 stubs: options returns 501.
+Wave 0 stubs: all replaced.
 Wave 1 (plan 03-02): earnings, dividends, news implemented.
 Wave 2 (plan 03-03): OHLCV multi-timeframe endpoint implemented.
 Wave 2 (plan 03-04): fundamentals, short-interest, insiders implemented.
-Remaining stub (options) is replaced in Wave 3.
+Wave 3 (plan 03-05): options chain with Black-Scholes Greeks implemented.
 """
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+import statistics
+from datetime import date, datetime, timedelta, timezone
 
 import yfinance as yf
 from fastapi import APIRouter, Depends
@@ -26,6 +27,7 @@ from ingestion.sources.finnhub_source import (
     fetch_insider_transactions,
 )
 from analysis.insider import cluster_insiders
+from analysis.black_scholes import bs_greeks, iv_percentile_rank
 from models.fundamentals import Fundamentals
 from models.ohlcv import OHLCV
 
@@ -357,8 +359,148 @@ async def get_insiders(ticker: str):
 
 @router.get("/options/{ticker}")  # EQUITY-09
 async def get_options(ticker: str):
-    """Return options chain with Black-Scholes Greeks. Implemented in Wave 3."""
-    return JSONResponse(status_code=501, content={"status": "not_implemented", "endpoint": "options"})
+    """Return options chain with Black-Scholes Greeks (Wave 3).
+
+    Returns full calls/puts chain for the nearest expiry with delta, gamma, vega, theta
+    computed via Black-Scholes using yfinance-provided impliedVolatility.
+    IV surface grid computed across nearest 5 expiries.
+    IV percentile rank computed across strikes of nearest-expiry chain.
+    LSE tickers (.L suffix) return available=False (no options on Yahoo for UK stocks).
+    Cached 15m (quote tier).
+    """
+    # LSE tickers have no options data on Yahoo Finance
+    if ticker.endswith(".L"):
+        return {
+            "ticker": ticker,
+            "available": False,
+            "message": "Options not available for LSE tickers",
+        }
+
+    redis_client = get_redis()
+    cache_key = f"options:{ticker}"
+    cached = cache_get(redis_client, cache_key)
+    if cached:
+        return cached
+
+    try:
+        t = yf.Ticker(ticker)
+        expiries = t.options  # list of expiry date strings: ['2026-04-25', ...]
+        if not expiries:
+            response = {"ticker": ticker, "available": False, "message": "Options data unavailable"}
+            cache_set(redis_client, cache_key, response, "quote")
+            return response
+
+        # Limit to nearest 5 expiries to stay within rate limits
+        expiries = list(expiries[:5])
+
+        # Current stock price
+        info = t.info
+        S = info.get("currentPrice") or info.get("regularMarketPrice", 100.0) or 100.0
+        S = float(S)
+
+        # Risk-free rate: hardcoded fallback
+        # TODO: pull from yield_curve table bc_3month when Phase 8 wires it
+        r = 0.045
+
+        # Build full chain for nearest expiry
+        nearest_expiry = expiries[0]
+        expiry_date = date.fromisoformat(nearest_expiry)
+        today = date.today()
+        T_nearest = max((expiry_date - today).days / 365.0, 0.001)
+
+        chain = t.option_chain(nearest_expiry)
+
+        def _build_contracts(df, option_type: str) -> list:
+            contracts = []
+            for _, row in df.iterrows():
+                sigma = float(row.get("impliedVolatility") or 0.0)
+                strike = float(row.get("strike") or 0.0)
+                greeks = bs_greeks(S, strike, T_nearest, r, sigma, option_type)
+                contracts.append({
+                    "strike": strike,
+                    "bid": float(row.get("bid") or 0.0),
+                    "ask": float(row.get("ask") or 0.0),
+                    "lastPrice": float(row.get("lastPrice") or 0.0),
+                    "volume": int(row.get("volume") or 0) if row.get("volume") is not None else 0,
+                    "openInterest": int(row.get("openInterest") or 0) if row.get("openInterest") is not None else 0,
+                    "iv": round(sigma, 4),
+                    "delta": greeks["delta"],
+                    "gamma": greeks["gamma"],
+                    "vega": greeks["vega"],
+                    "theta": greeks["theta"],
+                })
+            return contracts
+
+        calls = _build_contracts(chain.calls, "call")
+        puts = _build_contracts(chain.puts, "put")
+
+        # Compute IV percentile rank across strikes of nearest-expiry chain
+        # (rough rank across current chain IV values; 52-week rank is Phase 8)
+        all_ivs = [c["iv"] for c in calls + puts if c["iv"] and c["iv"] > 0]
+        median_iv = statistics.median(all_ivs) if all_ivs else 0.0
+        iv_rank = iv_percentile_rank(median_iv, all_ivs) if all_ivs else 0.0
+
+        # Build IV surface grid across nearest 5 expiries
+        surface_strikes: list[float] = []
+        surface_expiries: list[str] = []
+        iv_matrix: list[list[float]] = []
+
+        for exp in expiries:
+            try:
+                exp_chain = t.option_chain(exp)
+                exp_date = date.fromisoformat(exp)
+                exp_strikes = [float(r["strike"]) for _, r in exp_chain.calls.iterrows() if r.get("strike")]
+                exp_ivs_by_strike = {
+                    float(r["strike"]): float(r.get("impliedVolatility") or 0.0)
+                    for _, r in exp_chain.calls.iterrows()
+                }
+                if not surface_strikes:
+                    # Use first expiry strikes as the canonical strike axis
+                    surface_strikes = sorted(exp_strikes)
+                surface_expiries.append(exp)
+                col = [exp_ivs_by_strike.get(s, 0.0) for s in surface_strikes]
+                iv_matrix.append(col)
+            except Exception as exp_exc:
+                logger.debug("IV surface fetch error for expiry %s: %s", exp, exp_exc)
+                surface_expiries.append(exp)
+                iv_matrix.append([0.0] * len(surface_strikes))
+
+        # Transpose: iv_matrix[row=strike_index][col=expiry_index]
+        if iv_matrix and surface_strikes:
+            n_strikes = len(surface_strikes)
+            n_expiries = len(surface_expiries)
+            transposed = [
+                [iv_matrix[ei][si] if ei < len(iv_matrix) and si < len(iv_matrix[ei]) else 0.0
+                 for ei in range(n_expiries)]
+                for si in range(n_strikes)
+            ]
+        else:
+            transposed = []
+
+        iv_surface = {
+            "strikes": surface_strikes,
+            "expiries": surface_expiries,
+            "iv_matrix": transposed,
+        }
+
+        response = {
+            "ticker": ticker,
+            "available": True,
+            "expiry": nearest_expiry,
+            "expiries": expiries,
+            "current_price": S,
+            "iv_rank": iv_rank,
+            "calls": calls,
+            "puts": puts,
+            "iv_surface": iv_surface,
+            "source": "yfinance+black_scholes",
+        }
+        cache_set(redis_client, cache_key, response, "quote")
+        return response
+
+    except Exception as exc:
+        logger.warning("get_options error for %s: %s", ticker, exc)
+        return {"ticker": ticker, "available": False, "message": "Options data unavailable"}
 
 
 @router.get("/news/{ticker}")  # EQUITY-10

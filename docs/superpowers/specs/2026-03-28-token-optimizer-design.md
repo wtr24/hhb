@@ -84,7 +84,7 @@ SessionStart
 4. Read `.planning/ROADMAP.md` → extract active phase goal + next 2 upcoming phases + list of completed phases
 5. Read `.planning/PROJECT.md` → extract stack line + hard constraints (first 40 lines sufficient)
 6. Read active phase `CONTEXT.md` if it exists → extract up to 5 most recent `D-NN` decisions
-7. Read `docs/superpowers/specs/` directory listing → build spec section map from known filename
+7. Scan `docs/superpowers/specs/` for a `.md` file matching `*bloomberg-terminal-design*` (glob, not hardcoded name — guards against date-prefix changes). If found, use that path in the section map. If not found, omit the section map block from BRIEF.md.
 8. Write `.planning/BRIEF.md` with structured content (see BRIEF.md spec below)
 9. Return `additionalContext`: `"Project brief updated. Read .planning/BRIEF.md for orientation before proceeding."`
 
@@ -202,16 +202,26 @@ docs/superpowers/specs/2026-03-24-bloomberg-terminal-design.md
 
 ## Registration
 
-Add to `C:\Users\Surface-Pro-1\.claude\settings.json` SessionStart hooks array:
+Add to the **existing** `SessionStart[0].hooks` array in `C:\Users\Surface-Pro-1\.claude\settings.json`. The file uses a nested structure — do NOT create a new top-level `SessionStart` entry:
 
 ```json
-{
-  "type": "command",
-  "command": "node \"C:/Users/Surface-Pro-1/.claude/hooks/gsd-brief-generator.js\""
-}
+"SessionStart": [
+  {
+    "hooks": [
+      {
+        "type": "command",
+        "command": "node \"C:/Users/Surface-Pro-1/.claude/hooks/gsd-check-update.js\""
+      },
+      {
+        "type": "command",
+        "command": "node \"C:/Users/Surface-Pro-1/.claude/hooks/gsd-brief-generator.js\""
+      }
+    ]
+  }
+]
 ```
 
-Placed after `gsd-check-update.js`, before any other SessionStart hooks.
+The new entry goes **after** `gsd-check-update.js` in the same inner `hooks` array.
 
 ---
 

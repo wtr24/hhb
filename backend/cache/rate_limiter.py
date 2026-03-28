@@ -27,6 +27,9 @@ RATE_LIMITS = {
     "fmp":           {"capacity": 250, "per_seconds": 86400},
     "alpha_vantage": {"capacity": 25,  "per_seconds": 86400},
     "coingecko":     {"capacity": 13,  "per_seconds": 3600},
+    # yfinance: unofficial Yahoo Finance API; no published limit. Conservative 60/60s.
+    # fetch_ohlcv_batch also has time.sleep(0.5) as a secondary per-request throttle.
+    "yfinance":      {"capacity": 60,  "per_seconds": 60},
 }
 
 

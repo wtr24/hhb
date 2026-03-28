@@ -94,24 +94,16 @@ def upgrade() -> None:
     )
 
     # ------------------------------------------------------------------ #
-    # Compression policies — 7-day chunk interval, compress after 30 days
+    # Compression policies — enable columnstore then compress after 30 days
     # Covers all 5 hypertables (ohlcv from 0001 + 4 new ones)
+    # timescaledb.compress = true required before add_compression_policy
+    # on TimescaleDB 2.18+ (columnstore rename)
     # ------------------------------------------------------------------ #
-    op.execute(
-        "SELECT add_compression_policy('ohlcv', INTERVAL '30 days', if_not_exists => TRUE)"
-    )
-    op.execute(
-        "SELECT add_compression_policy('fundamentals', INTERVAL '30 days', if_not_exists => TRUE)"
-    )
-    op.execute(
-        "SELECT add_compression_policy('macro_series', INTERVAL '30 days', if_not_exists => TRUE)"
-    )
-    op.execute(
-        "SELECT add_compression_policy('fx_rates', INTERVAL '30 days', if_not_exists => TRUE)"
-    )
-    op.execute(
-        "SELECT add_compression_policy('yield_curve', INTERVAL '30 days', if_not_exists => TRUE)"
-    )
+    for table in ("ohlcv", "fundamentals", "macro_series", "fx_rates", "yield_curve"):
+        op.execute(f"ALTER TABLE {table} SET (timescaledb.compress = true)")
+        op.execute(
+            f"SELECT add_compression_policy('{table}', INTERVAL '30 days', if_not_exists => TRUE)"
+        )
 
 
 def downgrade() -> None:

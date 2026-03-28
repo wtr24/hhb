@@ -11,6 +11,7 @@ class Fundamentals(Base):
     ev_ebitda = Column(Numeric(10, 4))
     market_cap = Column(BigInteger())
     debt_equity = Column(Numeric(10, 4))
+    roe = Column(Numeric(10, 4))
     source = Column(String(20))
 
     __table_args__ = (

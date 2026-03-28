@@ -13,7 +13,8 @@ class OHLCV(Base):
     close = Column(Numeric(18, 6))
     volume = Column(BigInteger())
     source = Column(String(20))
+    interval = Column(String(5), default='1d', nullable=False)
 
     __table_args__ = (
-        Index("ix_ohlcv_ticker_time", "ticker", "time"),
+        Index("ix_ohlcv_ticker_time_interval", "ticker", "time", "interval"),
     )

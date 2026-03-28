@@ -22,9 +22,9 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Current Status
 
-- **Phase**: 03 — Equity Overview (in progress — 4/6 plans complete)
-- **Last action**: 03-04 complete — Wave 2: fundamentals/short-interest/insider endpoints + 4 frontend panels (FundamentalsPanel, ShortInterestPanel, InsiderPanel, NewsPanel)
-- **Next action**: Execute 03-05 (Wave 3: options chain endpoint + OptionsPanel)
+- **Phase**: 03 — Equity Overview (in progress — 5/6 plans complete)
+- **Last action**: 03-05 complete — Wave 3: options chain endpoint with BS Greeks + OptionsChain table + IVSurface canvas heatmap
+- **Next action**: Execute 03-06 (EquityModule full assembly — wiring all panels into the App shell)
 
 ## Milestone
 
@@ -112,5 +112,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 03-04 (Wave 2 — fundamentals/short-interest/insider backend + 4 frontend panels)
-- **Timestamp**: 2026-03-28T22:24:11Z
+- **Stopped at**: Completed 03-05 (Wave 3 — options chain endpoint with BS Greeks + OptionsChain/IVSurface components)
+- **Timestamp**: 2026-03-28T22:30:00Z

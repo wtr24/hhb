@@ -3,6 +3,7 @@ Equity-specific REST endpoints.
 
 Wave 0 stubs: options returns 501.
 Wave 1 (plan 03-02): earnings, dividends, news implemented.
+Wave 2 (plan 03-03): OHLCV multi-timeframe endpoint implemented.
 Wave 2 (plan 03-04): fundamentals, short-interest, insiders implemented.
 Remaining stub (options) is replaced in Wave 3.
 """
@@ -13,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 import yfinance as yf
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_async_db
@@ -26,22 +27,149 @@ from ingestion.sources.finnhub_source import (
 )
 from analysis.insider import cluster_insiders
 from models.fundamentals import Fundamentals
+from models.ohlcv import OHLCV
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/equity", tags=["equity"])
 
+VALID_INTERVALS = {"1d", "1wk", "1h", "4h"}
+INTRADAY_INTERVALS = {"1h", "4h"}
+
+
+@router.get("/ohlcv/{ticker}/{interval}")  # EQUITY-02, EQUITY-03
+async def get_ohlcv(ticker: str, interval: str, db: AsyncSession = Depends(get_async_db)):
+    """Return OHLCV bars for a ticker at a given interval (Wave 2).
+
+    Supports intervals: 1d, 1wk, 1h, 4h.
+    For intraday intervals (1h, 4h) time is returned as Unix seconds.
+    For daily/weekly intervals time is returned as YYYY-MM-DD string.
+    On DB miss for intraday, triggers on-demand yfinance fetch and stores result.
+    Cached for 5m (quote tier) for intraday, 1h (fundamentals tier) for daily/weekly.
+    """
+    if interval not in VALID_INTERVALS:
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"Invalid interval '{interval}'. Valid: {sorted(VALID_INTERVALS)}"},
+        )
+
+    cache_tier = "quote" if interval in INTRADAY_INTERVALS else "fundamentals"
+    cache_key = f"ohlcv:{ticker}:{interval}"
+
+    redis_client = get_redis()
+    cached = cache_get(redis_client, cache_key)
+    if cached:
+        return cached
+
+    result = await db.execute(
+        select(OHLCV)
+        .where(OHLCV.ticker == ticker, OHLCV.interval == interval)
+        .order_by(asc(OHLCV.time))
+        .limit(500)
+    )
+    rows = result.scalars().all()
+
+    if not rows and interval in INTRADAY_INTERVALS:
+        rows = await _ingest_intraday(ticker, interval, db)
+
+    if not rows and interval not in INTRADAY_INTERVALS:
+        rows = await _ingest_daily(ticker, interval, db)
+
+    bars = _rows_to_bars(rows, interval)
+    response = {"ticker": ticker, "interval": interval, "bars": bars}
+    cache_set(redis_client, cache_key, response, cache_tier)
+    return response
+
+
+async def _ingest_intraday(ticker: str, interval: str, db: AsyncSession):
+    """Fetch intraday OHLCV from yfinance and upsert to DB. Returns list of OHLCV rows."""
+    period = "60d" if interval == "1h" else "730d"
+    try:
+        t = yf.Ticker(ticker)
+        df = t.history(period=period, interval=interval)
+        if df is None or df.empty:
+            return []
+        rows = []
+        for ts, row in df.iterrows():
+            ohlcv = OHLCV(
+                time=ts.to_pydatetime(),
+                ticker=ticker,
+                interval=interval,
+                open=float(row["Open"]) if row["Open"] is not None else None,
+                high=float(row["High"]) if row["High"] is not None else None,
+                low=float(row["Low"]) if row["Low"] is not None else None,
+                close=float(row["Close"]) if row["Close"] is not None else None,
+                volume=int(row["Volume"]) if row["Volume"] is not None else None,
+                source="yfinance",
+            )
+            rows.append(ohlcv)
+        for ohlcv_row in rows:
+            await db.merge(ohlcv_row)
+        await db.commit()
+        return rows
+    except Exception as exc:
+        logger.warning("_ingest_intraday error for %s/%s: %s", ticker, interval, exc)
+        await db.rollback()
+        return []
+
+
+async def _ingest_daily(ticker: str, interval: str, db: AsyncSession):
+    """Fetch daily/weekly OHLCV from yfinance and upsert to DB. Returns list of OHLCV rows."""
+    period = "max" if interval == "1wk" else "5y"
+    try:
+        t = yf.Ticker(ticker)
+        df = t.history(period=period, interval=interval)
+        if df is None or df.empty:
+            return []
+        rows = []
+        for ts, row in df.iterrows():
+            ohlcv = OHLCV(
+                time=ts.to_pydatetime(),
+                ticker=ticker,
+                interval=interval,
+                open=float(row["Open"]) if row["Open"] is not None else None,
+                high=float(row["High"]) if row["High"] is not None else None,
+                low=float(row["Low"]) if row["Low"] is not None else None,
+                close=float(row["Close"]) if row["Close"] is not None else None,
+                volume=int(row["Volume"]) if row["Volume"] is not None else None,
+                source="yfinance",
+            )
+            rows.append(ohlcv)
+        for ohlcv_row in rows:
+            await db.merge(ohlcv_row)
+        await db.commit()
+        return rows
+    except Exception as exc:
+        logger.warning("_ingest_daily error for %s/%s: %s", ticker, interval, exc)
+        await db.rollback()
+        return []
+
+
+def _rows_to_bars(rows, interval: str) -> list:
+    """Convert OHLCV model rows to chart-ready bar dicts."""
+    is_intraday = interval in INTRADAY_INTERVALS
+    bars = []
+    for row in rows:
+        if is_intraday:
+            t = row.time
+            time_val = int(t.timestamp()) if hasattr(t, "timestamp") else int(t)
+        else:
+            t = row.time
+            time_val = t.strftime("%Y-%m-%d") if hasattr(t, "strftime") else str(t)[:10]
+        bars.append({
+            "time": time_val,
+            "open": float(row.open) if row.open is not None else None,
+            "high": float(row.high) if row.high is not None else None,
+            "low": float(row.low) if row.low is not None else None,
+            "close": float(row.close) if row.close is not None else None,
+            "volume": int(row.volume) if row.volume is not None else None,
+        })
+    return bars
+
 
 @router.get("/earnings/{ticker}")  # EQUITY-04
 async def get_earnings(ticker: str):
-    """Return earnings calendar dates for a ticker (Wave 1).
-
-    Returns a list of upcoming/recent earnings dates from yfinance.
-    Cached for 24h (fundamentals tier).
-    Falls back to empty list on yfinance errors.
-    """
+    """Return earnings calendar dates for a ticker (Wave 1)."""
     redis_client = get_redis()
-
-    # Cache check (24h TTL)
     cached = cache_get(redis_client, f"earnings:{ticker}")
     if cached:
         return cached
@@ -49,26 +177,15 @@ async def get_earnings(ticker: str):
     try:
         t = yf.Ticker(ticker)
         df = t.get_earnings_dates(limit=12)
-        if df is not None and not df.empty:
-            # DatetimeIndex — convert to YYYY-MM-DD strings
-            earnings_dates = [
-                d.strftime("%Y-%m-%d") for d in df.index if d is not None
-            ]
-        else:
-            earnings_dates = []
-        response = {
-            "ticker": ticker,
-            "earnings_dates": earnings_dates,
-            "source": "yfinance",
-        }
+        earnings_dates = (
+            [d.strftime("%Y-%m-%d") for d in df.index if d is not None]
+            if df is not None and not df.empty
+            else []
+        )
+        response = {"ticker": ticker, "earnings_dates": earnings_dates, "source": "yfinance"}
     except Exception as exc:
         logger.warning("get_earnings yfinance error for %s: %s", ticker, exc)
-        response = {
-            "ticker": ticker,
-            "earnings_dates": [],
-            "source": "yfinance",
-            "error": "unavailable",
-        }
+        response = {"ticker": ticker, "earnings_dates": [], "source": "yfinance", "error": "unavailable"}
 
     cache_set(redis_client, f"earnings:{ticker}", response, "fundamentals")
     return response
@@ -76,42 +193,24 @@ async def get_earnings(ticker: str):
 
 @router.get("/dividends/{ticker}")  # EQUITY-05
 async def get_dividends(ticker: str):
-    """Return dividend history for a ticker (Wave 1).
-
-    Returns a list of {"date": "YYYY-MM-DD", "amount": float} dicts from yfinance.
-    Cached for 24h (fundamentals tier).
-    Falls back to empty list on yfinance errors.
-    """
+    """Return dividend history for a ticker (Wave 1)."""
     redis_client = get_redis()
-
-    # Cache check (24h TTL)
     cached = cache_get(redis_client, f"dividends:{ticker}")
     if cached:
         return cached
 
     try:
         t = yf.Ticker(ticker)
-        divs = t.dividends  # pandas Series with DatetimeIndex
-        if divs is not None and len(divs) > 0:
-            dividends = [
-                {"date": idx.strftime("%Y-%m-%d"), "amount": float(val)}
-                for idx, val in divs.items()
-            ]
-        else:
-            dividends = []
-        response = {
-            "ticker": ticker,
-            "dividends": dividends,
-            "source": "yfinance",
-        }
+        divs = t.dividends
+        dividends = (
+            [{"date": idx.strftime("%Y-%m-%d"), "amount": float(val)} for idx, val in divs.items()]
+            if divs is not None and len(divs) > 0
+            else []
+        )
+        response = {"ticker": ticker, "dividends": dividends, "source": "yfinance"}
     except Exception as exc:
         logger.warning("get_dividends yfinance error for %s: %s", ticker, exc)
-        response = {
-            "ticker": ticker,
-            "dividends": [],
-            "source": "yfinance",
-            "error": "unavailable",
-        }
+        response = {"ticker": ticker, "dividends": [], "source": "yfinance", "error": "unavailable"}
 
     cache_set(redis_client, f"dividends:{ticker}", response, "fundamentals")
     return response
@@ -119,18 +218,12 @@ async def get_dividends(ticker: str):
 
 @router.get("/fundamentals/{ticker}")  # EQUITY-06
 async def get_fundamentals(ticker: str, db: AsyncSession = Depends(get_async_db)):
-    """Return fundamentals (P/E, EV/EBITDA, ROE, D/E, market cap). Wave 2.
-
-    Queries Fundamentals table for latest row, then supplements ROE from yfinance
-    if not present in DB. Cached 24h (fundamentals tier).
-    """
+    """Return fundamentals (P/E, EV/EBITDA, ROE, D/E, market cap). Wave 2."""
     redis_client = get_redis()
-
     cached = cache_get(redis_client, f"fundamentals:{ticker}")
     if cached:
         return cached
 
-    # Query DB for latest fundamentals row
     result = await db.execute(
         select(Fundamentals)
         .where(Fundamentals.ticker == ticker)
@@ -139,11 +232,7 @@ async def get_fundamentals(ticker: str, db: AsyncSession = Depends(get_async_db)
     )
     fund_row = result.scalar_one_or_none()
 
-    pe_ratio = None
-    ev_ebitda = None
-    roe = None
-    debt_equity = None
-    market_cap = None
+    pe_ratio = ev_ebitda = roe = debt_equity = market_cap = None
     stale = True
 
     if fund_row:
@@ -154,7 +243,6 @@ async def get_fundamentals(ticker: str, db: AsyncSession = Depends(get_async_db)
         market_cap = int(fund_row.market_cap) if fund_row.market_cap is not None else None
         stale = False
 
-    # Supplement ROE from yfinance if not in DB
     if roe is None:
         try:
             info = yf.Ticker(ticker).info
@@ -174,7 +262,6 @@ async def get_fundamentals(ticker: str, db: AsyncSession = Depends(get_async_db)
         "stale": stale,
         "source": "yfinance",
     }
-
     cache_set(redis_client, f"fundamentals:{ticker}", response, "fundamentals")
     return response
 
@@ -182,7 +269,6 @@ async def get_fundamentals(ticker: str, db: AsyncSession = Depends(get_async_db)
 @router.get("/short-interest/{ticker}")  # EQUITY-07
 async def get_short_interest(ticker: str):
     """Return short interest data. US-only on Finnhub free tier. Wave 2."""
-    # LSE tickers (.L suffix) and indices (^ prefix) not supported on free tier
     if ticker.endswith(".L") or ticker.startswith("^"):
         return {
             "ticker": ticker,
@@ -192,11 +278,7 @@ async def get_short_interest(ticker: str):
 
     api_key = os.getenv("FINNHUB_API_KEY", "")
     if not api_key:
-        return {
-            "ticker": ticker,
-            "available": False,
-            "message": "FINNHUB_API_KEY not configured",
-        }
+        return {"ticker": ticker, "available": False, "message": "FINNHUB_API_KEY not configured"}
 
     redis_client = get_redis()
     cached = cache_get(redis_client, f"short_interest:{ticker}")
@@ -210,11 +292,7 @@ async def get_short_interest(ticker: str):
         data = None
 
     if not data:
-        response = {
-            "ticker": ticker,
-            "available": False,
-            "message": "Short interest unavailable on Finnhub free tier",
-        }
+        response = {"ticker": ticker, "available": False, "message": "Short interest unavailable on Finnhub free tier"}
         cache_set(redis_client, f"short_interest:{ticker}", response, "macro")
         return response
 
@@ -240,7 +318,6 @@ async def get_short_interest(ticker: str):
 @router.get("/insiders/{ticker}")  # EQUITY-08
 async def get_insiders(ticker: str):
     """Return insider transaction clusters. US-only on Finnhub free tier. Wave 2."""
-    # LSE tickers (.L suffix) and indices (^ prefix) not supported on free tier
     if ticker.endswith(".L") or ticker.startswith("^"):
         return {
             "ticker": ticker,
@@ -250,11 +327,7 @@ async def get_insiders(ticker: str):
 
     api_key = os.getenv("FINNHUB_API_KEY", "")
     if not api_key:
-        return {
-            "ticker": ticker,
-            "available": False,
-            "message": "FINNHUB_API_KEY not configured",
-        }
+        return {"ticker": ticker, "available": False, "message": "FINNHUB_API_KEY not configured"}
 
     redis_client = get_redis()
     cached = cache_get(redis_client, f"insiders:{ticker}")
@@ -290,29 +363,15 @@ async def get_options(ticker: str):
 
 @router.get("/news/{ticker}")  # EQUITY-10
 async def get_news(ticker: str):
-    """Return company news headlines for a ticker (Wave 1).
-
-    Fetches last 30 days of news from Finnhub REST API.
-    Falls back to empty list with stale=True when API key absent or on error.
-    Cached for 5m (news tier).
-    """
+    """Return company news headlines for a ticker (Wave 1)."""
     redis_client = get_redis()
-
-    # Cache check (5m TTL)
     cached = cache_get(redis_client, f"news:{ticker}")
     if cached:
         return cached
 
     api_key = os.getenv("FINNHUB_API_KEY", "")
     if not api_key:
-        response = {
-            "ticker": ticker,
-            "news": [],
-            "stale": True,
-            "error": "FINNHUB_API_KEY not configured",
-        }
-        # Don't cache the no-key case — key may be set soon
-        return response
+        return {"ticker": ticker, "news": [], "stale": True, "error": "FINNHUB_API_KEY not configured"}
 
     now = datetime.now(tz=timezone.utc)
     to_date = now.strftime("%Y-%m-%d")
@@ -330,19 +389,10 @@ async def get_news(ticker: str):
             }
             for a in (raw_articles or [])
         ]
-        response = {
-            "ticker": ticker,
-            "news": news,
-            "stale": False,
-        }
+        response = {"ticker": ticker, "news": news, "stale": False}
     except Exception as exc:
         logger.warning("get_news finnhub error for %s: %s", ticker, exc)
-        response = {
-            "ticker": ticker,
-            "news": [],
-            "stale": True,
-            "error": "unavailable",
-        }
+        response = {"ticker": ticker, "news": [], "stale": True, "error": "unavailable"}
 
     cache_set(redis_client, f"news:{ticker}", response, "news")
     return response

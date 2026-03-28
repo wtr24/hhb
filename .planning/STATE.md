@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 02
-last_updated: "2026-03-28T12:00:00.000Z"
+status: Executing Phase 03
+last_updated: "2026-03-28T21:09:44.772Z"
 progress:
   total_phases: 12
   completed_phases: 2
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 18
+  completed_plans: 13
 ---
 
 # Project State
@@ -18,14 +18,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Unified zero-cost research terminal — pull up any instrument instantly with live quotes, charts, indicators, macro context, news sentiment, and positioning data
-**Current focus:** Phase 02 — data-ingestion-foundation
+**Current focus:** Phase 03 — equity-overview
 
 ## Current Status
 
-- **Phase**: 2 — Data Ingestion Foundation
-- **Current Plan**: 02-07 complete — Phase 02 all plans done
-- **Last action**: Completed 02-07 (wired check_rate_limit into all 5 ingestion tasks; yfinance added to RATE_LIMITS)
-- **Next action**: Begin Phase 03
+- **Phase**: 03 — Equity Overview (in progress — 1/6 plans complete)
+- **Last action**: 03-01 complete — Wave 0 foundation: FX endpoint, equity stubs, Black-Scholes/insider analysis modules, Finnhub helpers, test scaffold (44 tests)
+- **Next action**: Execute 03-02 (Wave 1: earnings, dividends, fundamentals endpoints)
 
 ## Milestone
 
@@ -70,6 +69,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 02-07]: Rate limit check in tasks.py fires once per task invocation (not per-series in FRED loop) — avoids consuming tokens for every series iteration
 - [Phase 02-07]: frankfurter and us_treasury guarded via check_rate_limit even without RATE_LIMITS entries — unknown sources pass through (returns True), wiring is consistent
 - [Phase 02-07]: yfinance added to RATE_LIMITS at 60/60s (conservative); fetch_ohlcv_batch time.sleep(0.5) retained as secondary per-request throttle
+- [Phase 03-01]: Equity stub routes return 501 JSON so tests have concrete assertion target before wave implementation lands
+- [Phase 03-01]: cluster_insiders filters F/A/D codes (10b5-1, award, disposition), keeps only P/S open-market transactions
+- [Phase 03-01]: bs_greeks vega divided by 100 to express per 1% IV move (industry convention for options analytics)
 
 ## Performance Metrics
 
@@ -86,6 +88,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 02 P04 | 216 | 2 tasks | 10 files |
 | Phase 02 P02-05 | 58s | 1 tasks | 2 files |
 | Phase 02 P06 | 73 | 2 tasks | 3 files |
+| Phase 03 P03-01 | 25 | 2 tasks | 16 files |
 
 ## Notes
 
@@ -96,5 +99,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 02-07 (INGEST-04 gap closure — rate limiter wired)
-- **Timestamp**: 2026-03-28T12:30:00Z
+- **Stopped at**: Completed 03-01 (Wave 0 foundation — FX endpoint, equity stubs, analysis modules, test scaffold)
+- **Timestamp**: 2026-03-28T18:25:00Z

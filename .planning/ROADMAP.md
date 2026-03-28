@@ -85,7 +85,7 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Wave 0: scipy + FX endpoint + OHLCV interval column + Black-Scholes + insider analysis + test scaffold
+- [x] 03-01-PLAN.md — Wave 0: scipy + FX endpoint + OHLCV interval column + Black-Scholes + insider analysis + test scaffold
 - [ ] 03-02-PLAN.md — Wave 1: Finnhub WebSocket live quotes + earnings/dividends/news REST endpoints
 - [ ] 03-03-PLAN.md — Wave 2: Multi-timeframe candlestick charts (lightweight-charts v5, 4-panel W/D/4H/1H, expand/collapse)
 - [ ] 03-04-PLAN.md — Wave 2: Fundamentals + short interest + insider clustering panels (backend + frontend)
@@ -305,7 +305,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Bootstrap | 3/5 | In Progress|  |
 | 2. Data Ingestion Foundation | 7/7 | Complete | 2026-03-28 |
-| 3. Equity Overview | 0/6 | Planned | - |
+| 3. Equity Overview | 1/6 | In Progress|  |
 | 4. Technical Analysis Engine | 0/7 | Not started | - |
 | 5. Macro Dashboard | 0/6 | Not started | - |
 | 6. Forex, Commodities & Crypto | 0/6 | Not started | - |

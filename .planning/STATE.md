@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 03
-last_updated: "2026-03-28T21:09:44.772Z"
+last_updated: "2026-03-28T21:16:38.244Z"
 progress:
   total_phases: 12
   completed_phases: 2
   total_plans: 18
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -22,9 +22,9 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 
 ## Current Status
 
-- **Phase**: 03 — Equity Overview (in progress — 1/6 plans complete)
-- **Last action**: 03-01 complete — Wave 0 foundation: FX endpoint, equity stubs, Black-Scholes/insider analysis modules, Finnhub helpers, test scaffold (44 tests)
-- **Next action**: Execute 03-02 (Wave 1: earnings, dividends, fundamentals endpoints)
+- **Phase**: 03 — Equity Overview (in progress — 2/6 plans complete)
+- **Last action**: 03-02 complete — Wave 1: Finnhub WebSocket client, earnings/dividends/news endpoints (9 new tests, 14 pass)
+- **Next action**: Execute 03-03 (Wave 2: fundamentals, short interest, insiders endpoints)
 
 ## Milestone
 
@@ -72,6 +72,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 03-01]: Equity stub routes return 501 JSON so tests have concrete assertion target before wave implementation lands
 - [Phase 03-01]: cluster_insiders filters F/A/D codes (10b5-1, award, disposition), keeps only P/S open-market transactions
 - [Phase 03-01]: bs_greeks vega divided by 100 to express per 1% IV move (industry convention for options analytics)
+- [Phase 03-02]: FinnhubWebSocket uses websockets library (v16.0) — already installed, idiomatic async WS library
+- [Phase 03-02]: is_finnhub_ws_eligible() is single source of truth for LSE/index exclusion from Finnhub WS
+- [Phase 03-02]: finnhub_task=None when FINNHUB_API_KEY absent — graceful degradation, Celery yfinance polling covers all tickers
 
 ## Performance Metrics
 
@@ -89,6 +92,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 02 P02-05 | 58s | 1 tasks | 2 files |
 | Phase 02 P06 | 73 | 2 tasks | 3 files |
 | Phase 03 P03-01 | 25 | 2 tasks | 16 files |
+| Phase 03 P03-02 | 248 | 2 tasks | 6 files |
 
 ## Notes
 
@@ -99,5 +103,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 03-01 (Wave 0 foundation — FX endpoint, equity stubs, analysis modules, test scaffold)
-- **Timestamp**: 2026-03-28T18:25:00Z
+- **Stopped at**: Completed 03-02 (Wave 1 — Finnhub WS client, earnings/dividends/news endpoints, Wave 1 tests)
+- **Timestamp**: 2026-03-28T21:15:34Z

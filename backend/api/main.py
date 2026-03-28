@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 import redis.asyncio as aioredis
 from fastapi import FastAPI
@@ -19,14 +20,44 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage Redis pub/sub listener lifecycle (per D-10).
-    Single asyncio background task. One Redis pub/sub connection total.
+    """Manage Redis pub/sub listener and Finnhub WebSocket lifecycle.
+
+    Starts two background tasks:
+    1. Redis pub/sub listener (D-10) — fans out channel messages to WS clients.
+    2. Finnhub WebSocket listener — ingests live US stock trade data into Redis.
+
+    Both tasks are cancelled on shutdown and their connections are closed.
     """
     async_redis = aioredis.Redis.from_url(get_async_redis_url(), decode_responses=True)
     task = asyncio.create_task(_redis_pubsub_listener(async_redis))
     logger.info("Redis pub/sub listener started")
+
+    # Finnhub WebSocket: live US quotes -> Redis quotes:{ticker} pub/sub
+    finnhub_key = os.getenv("FINNHUB_API_KEY", "")
+    if finnhub_key:
+        from ingestion.sources.finnhub_ws import FinnhubWebSocket
+        from api.redis_client import redis_client as sync_redis
+        finnhub_ws = FinnhubWebSocket(finnhub_key, sync_redis)
+        finnhub_task = asyncio.create_task(finnhub_ws.connect_and_listen())
+        logger.info("Finnhub WebSocket listener started")
+    else:
+        finnhub_task = None
+        logger.warning(
+            "FINNHUB_API_KEY not set — live quotes disabled, "
+            "falling back to yfinance polling for all tickers"
+        )
+
     yield
-    # Shutdown: cancel listener, close connection (Research Pitfall 8)
+
+    # Shutdown: cancel Finnhub WS task first, then pub/sub listener
+    if finnhub_task is not None:
+        finnhub_task.cancel()
+        try:
+            await finnhub_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("Finnhub WebSocket listener stopped")
+
     task.cancel()
     try:
         await task

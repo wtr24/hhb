@@ -3,6 +3,14 @@ SEED_TICKERS = [
     "^FTSE", "^FTMC", "BTC-USD", "GBP=X", "EURUSD=X",
 ]
 
+# Finnhub WebSocket eligible symbols: US stocks, forex, crypto only.
+# Excludes LSE (.L suffix), indices (^ prefix), and Yahoo FX aliases (= suffix).
+# Free tier: max 50 concurrent subscriptions; 1 connection per API key.
+FINNHUB_WS_SYMBOLS = [
+    t for t in SEED_TICKERS
+    if not t.endswith(".L") and not t.startswith("^") and "=" not in t
+]
+
 FRED_SERIES_MAP = {
     "cpi": "CPIAUCSL",
     "core_cpi": "CPILFESL",

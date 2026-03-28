@@ -6,8 +6,9 @@ Stub tests are marked skip until each wave implements the endpoint.
 Tests verify response shape once endpoints are implemented.
 Per 03-VALIDATION.md test requirements.
 """
+import pandas as pd
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, PropertyMock
 
 
 @pytest.fixture
@@ -19,21 +20,7 @@ def client():
 
 
 class TestEquityStubs:
-    """Wave 0 stub tests: all return 501 Not Implemented."""
-
-    def test_earnings_endpoint_registered(self, client):
-        """GET /api/equity/earnings/{ticker} endpoint must exist (returns 501 stub)."""
-        response = client.get("/api/equity/earnings/AAPL")
-        assert response.status_code == 501
-        data = response.json()
-        assert data["status"] == "not_implemented"
-
-    def test_dividends_endpoint_registered(self, client):
-        """GET /api/equity/dividends/{ticker} endpoint must exist (returns 501 stub)."""
-        response = client.get("/api/equity/dividends/AAPL")
-        assert response.status_code == 501
-        data = response.json()
-        assert data["status"] == "not_implemented"
+    """Wave 0 stub tests: fundamentals, short-interest, insiders, options return 501."""
 
     def test_fundamentals_endpoint_registered(self, client):
         """GET /api/equity/fundamentals/{ticker} endpoint must exist (returns 501 stub)."""
@@ -55,61 +42,238 @@ class TestEquityStubs:
         response = client.get("/api/equity/options/AAPL")
         assert response.status_code == 501
 
-    def test_news_endpoint_registered(self, client):
-        """GET /api/equity/news/{ticker} endpoint must exist (returns 501 stub)."""
-        response = client.get("/api/equity/news/AAPL")
-        assert response.status_code == 501
-
     def test_lse_ticker_no_crash(self, client):
-        """LSE tickers with .L suffix must not crash any endpoint."""
-        # All endpoints must accept .L suffix without 500 errors
+        """LSE tickers with .L suffix must not crash any endpoint (no 500 errors)."""
         lse_endpoints = [
-            "/api/equity/earnings/LLOY.L",
-            "/api/equity/dividends/LLOY.L",
             "/api/equity/fundamentals/LLOY.L",
-            "/api/equity/news/LLOY.L",
+            "/api/equity/short-interest/LLOY.L",
+            "/api/equity/insiders/LLOY.L",
+            "/api/equity/options/LLOY.L",
         ]
         for url in lse_endpoints:
             response = client.get(url)
             assert response.status_code != 500, f"Server error on {url}"
 
 
-# --- Wave 1 tests (implement in Wave 1: earnings, dividends, fundamentals) ---
+# --- Wave 1 tests (earnings, dividends, news) ---
 
-@pytest.mark.skip(reason="Stub — implement in Wave 1")
 class TestEarningsDates:
-    """Test earnings calendar endpoint once Wave 1 implements it."""
+    """Test earnings calendar endpoint (Wave 1 implemented in plan 03-02)."""
 
     def test_earnings_dates(self, client):
-        """GET /api/equity/earnings/AAPL returns earnings calendar dates."""
-        response = client.get("/api/equity/earnings/AAPL")
+        """GET /api/equity/earnings/AAPL returns earnings calendar with 3 dates."""
+        dates = pd.DatetimeIndex([
+            "2024-01-26", "2024-04-26", "2024-07-26"
+        ])
+        mock_df = pd.DataFrame(
+            {"EPS Estimate": [1.5, 1.6, 1.7]},
+            index=dates,
+        )
+        with patch("api.routes.equity.yf.Ticker") as mock_ticker_cls, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None  # cache miss
+            mock_get_redis.return_value = mock_redis
+
+            mock_ticker = MagicMock()
+            mock_ticker.get_earnings_dates.return_value = mock_df
+            mock_ticker_cls.return_value = mock_ticker
+
+            response = client.get("/api/equity/earnings/AAPL")
+
         assert response.status_code == 200
         data = response.json()
         assert "ticker" in data
-        assert "earnings_dates" in data or "next_earnings" in data
+        assert data["ticker"] == "AAPL"
+        assert "earnings_dates" in data
+        assert len(data["earnings_dates"]) == 3
+        assert data["source"] == "yfinance"
 
     def test_earnings_lse_ticker(self, client):
-        """LSE ticker LLOY.L earnings dates work without crash."""
-        response = client.get("/api/equity/earnings/LLOY.L")
-        assert response.status_code in (200, 404)  # OK or no data, not 500
+        """LSE ticker LLOY.L earnings dates work without crash (200 or no data)."""
+        with patch("api.routes.equity.yf.Ticker") as mock_ticker_cls, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+
+            mock_ticker = MagicMock()
+            mock_ticker.get_earnings_dates.return_value = pd.DataFrame()
+            mock_ticker_cls.return_value = mock_ticker
+
+            response = client.get("/api/equity/earnings/LLOY.L")
+
+        assert response.status_code in (200, 404)
+
+    def test_earnings_yfinance_error_returns_empty(self, client):
+        """On yfinance error, earnings endpoint returns empty list not 500."""
+        with patch("api.routes.equity.yf.Ticker") as mock_ticker_cls, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+
+            mock_ticker_cls.side_effect = Exception("yfinance down")
+
+            response = client.get("/api/equity/earnings/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["earnings_dates"] == []
+        assert "error" in data
 
 
-@pytest.mark.skip(reason="Stub — implement in Wave 1")
 class TestDividendDates:
-    """Test dividend ex-dates endpoint once Wave 1 implements it."""
+    """Test dividend ex-dates endpoint (Wave 1 implemented in plan 03-02)."""
 
     def test_dividend_dates(self, client):
-        """GET /api/equity/dividends/AAPL returns dividend ex-dates."""
-        response = client.get("/api/equity/dividends/AAPL")
+        """GET /api/equity/dividends/AAPL returns dividend list with 2 entries."""
+        dates = pd.DatetimeIndex(["2024-02-09", "2024-05-10"])
+        mock_series = pd.Series([0.24, 0.25], index=dates, name="Dividends")
+
+        with patch("api.routes.equity.yf.Ticker") as mock_ticker_cls, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+
+            mock_ticker = MagicMock()
+            type(mock_ticker).dividends = PropertyMock(return_value=mock_series)
+            mock_ticker_cls.return_value = mock_ticker
+
+            response = client.get("/api/equity/dividends/AAPL")
+
         assert response.status_code == 200
         data = response.json()
         assert "ticker" in data
-        assert "dividends" in data or "ex_dates" in data
+        assert data["ticker"] == "AAPL"
+        assert "dividends" in data
+        assert len(data["dividends"]) == 2
+        for entry in data["dividends"]:
+            assert "date" in entry
+            assert "amount" in entry
+
+    def test_dividend_dates_empty_series(self, client):
+        """Ticker with no dividends returns empty list."""
+        with patch("api.routes.equity.yf.Ticker") as mock_ticker_cls, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+
+            mock_ticker = MagicMock()
+            type(mock_ticker).dividends = PropertyMock(
+                return_value=pd.Series([], dtype=float)
+            )
+            mock_ticker_cls.return_value = mock_ticker
+
+            response = client.get("/api/equity/dividends/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["dividends"] == []
+
+    def test_dividend_yfinance_error_returns_empty(self, client):
+        """On yfinance error, dividends endpoint returns empty list not 500."""
+        with patch("api.routes.equity.yf.Ticker") as mock_ticker_cls, \
+             patch("api.routes.equity.get_redis") as mock_get_redis:
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+
+            mock_ticker_cls.side_effect = Exception("yfinance down")
+
+            response = client.get("/api/equity/dividends/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["dividends"] == []
+        assert "error" in data
 
 
-@pytest.mark.skip(reason="Stub — implement in Wave 1")
+class TestNews:
+    """Test company news endpoint (Wave 1 implemented in plan 03-02)."""
+
+    def test_news(self, client):
+        """GET /api/equity/news/AAPL returns 2 news items with headline key."""
+        mock_articles = [
+            {
+                "headline": "Apple beats earnings estimates",
+                "source": "Reuters",
+                "url": "https://reuters.com/1",
+                "datetime": 1700000000,
+                "summary": "Apple reported strong quarterly results.",
+            },
+            {
+                "headline": "Apple Vision Pro sales update",
+                "source": "Bloomberg",
+                "url": "https://bloomberg.com/2",
+                "datetime": 1700100000,
+                "summary": "Sales exceed analyst forecasts.",
+            },
+        ]
+
+        with patch("api.routes.equity.fetch_company_news") as mock_news, \
+             patch("api.routes.equity.get_redis") as mock_get_redis, \
+             patch.dict("os.environ", {"FINNHUB_API_KEY": "test_key"}):
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_news.return_value = mock_articles
+
+            response = client.get("/api/equity/news/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "ticker" in data
+        assert data["ticker"] == "AAPL"
+        assert "news" in data
+        assert len(data["news"]) == 2
+        for item in data["news"]:
+            assert "headline" in item
+
+    def test_news_no_api_key_returns_empty(self, client):
+        """When FINNHUB_API_KEY absent, news endpoint returns empty list with stale=True."""
+        with patch("api.routes.equity.get_redis") as mock_get_redis, \
+             patch.dict("os.environ", {}, clear=True):
+            # Ensure key is not set
+            import os
+            os.environ.pop("FINNHUB_API_KEY", None)
+
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+
+            response = client.get("/api/equity/news/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["news"] == []
+        assert data["stale"] is True
+
+    def test_news_finnhub_error_returns_stale(self, client):
+        """On Finnhub error, news endpoint returns empty list with stale=True."""
+        with patch("api.routes.equity.fetch_company_news") as mock_news, \
+             patch("api.routes.equity.get_redis") as mock_get_redis, \
+             patch.dict("os.environ", {"FINNHUB_API_KEY": "test_key"}):
+            mock_redis = MagicMock()
+            mock_redis.get.return_value = None
+            mock_get_redis.return_value = mock_redis
+            mock_news.side_effect = Exception("Finnhub error")
+
+            response = client.get("/api/equity/news/AAPL")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["news"] == []
+        assert data["stale"] is True
+
+
+# --- Wave 2 tests (implement in Wave 2: short interest, insiders) ---
+
+@pytest.mark.skip(reason="Stub — implement in Wave 2")
 class TestFundamentalsShape:
-    """Test fundamentals endpoint shape once Wave 1 implements it."""
+    """Test fundamentals endpoint shape once Wave 2 implements it."""
 
     def test_fundamentals_shape(self, client):
         """GET /api/equity/fundamentals/AAPL returns expected keys including ROE."""
@@ -122,8 +286,6 @@ class TestFundamentalsShape:
         assert "debt_equity" in data
         assert "market_cap" in data
 
-
-# --- Wave 2 tests (implement in Wave 2: short interest, insiders, news) ---
 
 @pytest.mark.skip(reason="Stub — implement in Wave 2")
 class TestShortInterest:
@@ -142,7 +304,6 @@ class TestShortInterest:
         assert response.status_code in (200, 404)
         if response.status_code == 200:
             data = response.json()
-            # US-only — may have error note
             assert "error" in data or "note" in data or "short_interest" in data
 
 
@@ -161,18 +322,6 @@ class TestInsiders:
         assert "multi_insider" in data
 
 
-@pytest.mark.skip(reason="Stub — implement in Wave 2")
-class TestNews:
-    """Test company news endpoint once Wave 2 implements it."""
-
-    def test_news(self, client):
-        """GET /api/equity/news/AAPL returns headline list."""
-        response = client.get("/api/equity/news/AAPL")
-        assert response.status_code == 200
-        data = response.json()
-        assert "articles" in data or isinstance(data, list)
-
-
 # --- Wave 3 tests (implement in Wave 3: options chain) ---
 
 @pytest.mark.skip(reason="Stub — implement in Wave 3")
@@ -186,7 +335,6 @@ class TestOptionsChain:
         data = response.json()
         assert "calls" in data
         assert "puts" in data
-        # Greeks should be present in each contract
         if data["calls"]:
             contract = data["calls"][0]
             assert "strike" in contract

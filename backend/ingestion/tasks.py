@@ -13,6 +13,7 @@ from .sources.frankfurter_source import fetch_fx_rates
 from .sources.treasury_source import fetch_treasury_yield_curve
 from api.database import SessionLocal
 from api.redis_client import redis_client
+from cache.rate_limiter import check_rate_limit
 from cache.ttl import cache_set
 from models.ohlcv import OHLCV
 from models.fundamentals import Fundamentals
@@ -30,6 +31,9 @@ def health_check_task():
 def ingest_ohlcv_batch(self):
     """Scheduled batch task: fetch and upsert OHLCV + fundamentals for all seed tickers."""
     try:
+        if not check_rate_limit(redis_client, "yfinance"):
+            logger.warning("Rate limit exceeded for yfinance, retrying")
+            raise self.retry(countdown=RETRY_COUNTDOWNS[0])
         results = fetch_ohlcv_batch(SEED_TICKERS)
         with SessionLocal() as session:
             for result in results:
@@ -46,6 +50,9 @@ def ingest_ohlcv_batch(self):
 def ingest_ticker(self, ticker: str):
     """On-demand single ticker ingest task."""
     try:
+        if not check_rate_limit(redis_client, "yfinance"):
+            logger.warning("Rate limit exceeded for yfinance, retrying")
+            raise self.retry(countdown=RETRY_COUNTDOWNS[0])
         result = fetch_ohlcv_and_fundamentals(ticker)
         with SessionLocal() as session:
             _upsert_result(session, result)
@@ -85,6 +92,9 @@ def ingest_macro_batch(self):
     """Scheduled task: ingest all FRED macro series."""
     from .config import FRED_SERIES_MAP
     try:
+        if not check_rate_limit(redis_client, "fred"):
+            logger.warning("Rate limit exceeded for fred, retrying")
+            raise self.retry(countdown=RETRY_COUNTDOWNS[0])
         with SessionLocal() as session:
             for friendly_name, fred_id in FRED_SERIES_MAP.items():
                 try:
@@ -126,6 +136,9 @@ def ingest_macro_batch(self):
 def ingest_fx_rates(self):
     """Scheduled task: ingest Frankfurter FX rates for major pairs + GBP crosses."""
     try:
+        if not check_rate_limit(redis_client, "frankfurter"):
+            logger.warning("Rate limit exceeded for frankfurter, retrying")
+            raise self.retry(countdown=RETRY_COUNTDOWNS[0])
         data = fetch_fx_rates("USD")
         api_date = data.get("date", "")
         try:
@@ -172,6 +185,9 @@ def ingest_fx_rates(self):
 def ingest_treasury_curve(self):
     """Scheduled task: ingest US Treasury XML yield curve."""
     try:
+        if not check_rate_limit(redis_client, "us_treasury"):
+            logger.warning("Rate limit exceeded for us_treasury, retrying")
+            raise self.retry(countdown=RETRY_COUNTDOWNS[0])
         curve_rows = fetch_treasury_yield_curve()
         if curve_rows:
             from models.yield_curve import YieldCurve

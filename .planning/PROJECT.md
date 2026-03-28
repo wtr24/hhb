@@ -13,9 +13,9 @@ A unified research dashboard where any instrument — LLOY.L, BTC, GBP/USD, WTI 
 ### Validated
 
 - [x] Full-stack Docker Compose deployment (frontend + api + beat + worker + redis + timescaledb) runnable with a single `docker compose up -d` — *Validated in Phase 1: Infrastructure Bootstrap*
+- [x] Equity overview with live quotes, multi-timeframe charts, fundamentals, short interest, insider transactions, options chain with Greeks — *Validated in Phase 3: Equity Overview*
 
 ### Active
-- [ ] Equity overview with live quotes, multi-timeframe charts, fundamentals, short interest, insider transactions, options chain
 - [ ] 60+ technical indicators with historical win rates and statistical significance (p-values)
 - [ ] 60+ candlestick patterns + chart pattern detection + Fibonacci + Elliott Wave labelling
 - [ ] Full macro dashboard — US+UK yield curves, CPI/PCE/GDP/unemployment, VIX regime, DIY Fear & Greed
@@ -103,4 +103,4 @@ This document evolves at phase transitions and milestone boundaries.
 Phase 1 complete — full Docker Compose stack bootstrapped (6 services), FastAPI skeleton with health/WebSocket, React/Vite Bloomberg terminal shell, dev hot-reload override, production restart policies, and .env.example with all 7 API keys documented.
 
 ---
-*Last updated: 2026-03-25 after Phase 1: Infrastructure Bootstrap*
+*Last updated: 2026-03-28 after Phase 3: Equity Overview*

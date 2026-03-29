@@ -1,6 +1,13 @@
-"""Wave 0 stubs — replaced by Wave 1 implementation tests."""
+"""TA-01 and TA-02 indicator tests — Wave 1 implementation."""
 import pytest
 import numpy as np
+
+from analysis.indicators import (
+    compute_sma, compute_ema, compute_hma, compute_vwma,
+    compute_golden_death_cross, compute_ema_ribbon,
+    compute_rsi, compute_macd, compute_stoch_rsi,
+    compute_williams_r, compute_kdj,
+)
 
 # Synthetic OHLCV data used across all indicator tests (100 bars)
 @pytest.fixture
@@ -15,40 +22,91 @@ def ohlcv_100():
 
 
 # TA-01 Moving Averages
+
 def test_moving_averages_sma(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-01")
+    times = np.arange(100, dtype=float)
+    result = compute_sma(ohlcv_100["close"], times, period=20)
+    assert len(result["values"]) > 0
+    assert all(isinstance(v, float) for v in result["values"])
+    assert not any(np.isnan(v) for v in result["values"])
+
 
 def test_moving_averages_ema(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-01")
+    times = np.arange(100, dtype=float)
+    result = compute_ema(ohlcv_100["close"], times, period=20)
+    assert len(result["values"]) > 0
+    assert all(isinstance(v, float) for v in result["values"])
+    assert not any(np.isnan(v) for v in result["values"])
+
 
 def test_moving_averages_hma(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-01")
+    times = np.arange(100, dtype=float)
+    result = compute_hma(ohlcv_100["close"], times, period=20)
+    assert len(result["values"]) > 0
+    assert not any(np.isnan(v) for v in result["values"])
+
 
 def test_moving_averages_vwma(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-01")
+    times = np.arange(100, dtype=float)
+    result = compute_vwma(ohlcv_100["close"], ohlcv_100["volume"], times, period=20)
+    assert len(result["values"]) > 0
+    assert not any(np.isnan(v) for v in result["values"])
+
 
 def test_golden_death_cross(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-01")
+    times = np.arange(100, dtype=float)
+    result = compute_golden_death_cross(ohlcv_100["close"], times, fast=10, slow=20)
+    assert "signal" in result
+    assert all(v in {-1, 0, 1} for v in result["signal"])
+
 
 def test_ema_ribbon(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-01")
+    times = np.arange(100, dtype=float)
+    result = compute_ema_ribbon(ohlcv_100["close"], times)
+    assert len(result) == 8
 
 
 # TA-02 Momentum / Oscillators
+
 def test_momentum_rsi(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-02")
+    times = np.arange(100, dtype=float)
+    result = compute_rsi(ohlcv_100["close"], times, period=14)
+    assert len(result["values"]) > 0
+    assert all(0.0 <= v <= 100.0 for v in result["values"])
+
 
 def test_momentum_macd(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-02")
+    times = np.arange(100, dtype=float)
+    result = compute_macd(ohlcv_100["close"], times)
+    assert "macd" in result
+    assert "signal" in result
+    assert "histogram" in result
+
 
 def test_momentum_stoch_rsi(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-02")
+    times = np.arange(100, dtype=float)
+    result = compute_stoch_rsi(ohlcv_100["close"], times)
+    assert "k" in result
+    assert "d" in result
+
 
 def test_momentum_williams_r(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-02")
+    times = np.arange(100, dtype=float)
+    result = compute_williams_r(
+        ohlcv_100["high"], ohlcv_100["low"], ohlcv_100["close"], times, period=14
+    )
+    assert len(result["values"]) > 0
+    assert all(-100.0 <= v <= 0.0 for v in result["values"])
+
 
 def test_momentum_kdj(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-02")
+    times = np.arange(100, dtype=float)
+    result = compute_kdj(
+        ohlcv_100["high"], ohlcv_100["low"], ohlcv_100["close"], times
+    )
+    assert "k" in result
+    assert "d" in result
+    assert "j" in result
 
 
 # TA-03 Trend Strength

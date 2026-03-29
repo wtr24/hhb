@@ -24,6 +24,7 @@ from analysis import indicators as ind
 from analysis.garch import compute_garch_volatility
 from analysis.pivot_points import compute_all_methods  # noqa: F401 (not used in route but kept for reference)
 from analysis.intermarket import compute_rolling_correlation, INTERMARKET_PAIRS
+from cache.ttl import TTL
 from models.ohlcv import OHLCV
 from models.pivot_points import PivotPoints
 from models.ta_pattern_stats import TAPatternStats
@@ -562,3 +563,82 @@ async def get_pattern_stats(
         "timeframe": timeframe,
         "patterns": patterns_out,
     }
+
+
+# ---------------------------------------------------------------------------
+# Route 6: Chart pattern detection (TA-10)
+# ---------------------------------------------------------------------------
+
+@router.get("/chart-patterns/{ticker}")
+async def get_chart_patterns(
+    ticker: str,
+    timeframe: str = Query(default="1d", description="OHLCV interval (1d, 1wk, 1h, 4h)"),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Return heuristic chart pattern detections for the given ticker and timeframe.
+
+    Runs all 7 chart pattern detectors (H&S, Inv H&S, Cup & Handle, Double Top/Bottom,
+    Triangle, Flag/Pennant, Wedge) over the last 200 OHLCV bars.
+
+    Cache TTL:
+      - 1d  → ta_pattern_daily  (900s)
+      - 1wk → ta_pattern_weekly (3600s)
+      - other → 300s
+
+    All results carry experimental=True per TA-10.
+    """
+    cache_key = f"ta_chartpat:{ticker}:{timeframe}"
+    redis_client = get_redis()
+    cached_raw = redis_client.get(cache_key)
+    if cached_raw:
+        try:
+            return json.loads(cached_raw)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    # Fetch last 200 bars
+    result = await db.execute(
+        select(OHLCV)
+        .where(OHLCV.ticker == ticker, OHLCV.interval == timeframe)
+        .order_by(OHLCV.time.asc())
+        .limit(200)
+    )
+    rows = result.scalars().all()
+
+    if not rows:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No OHLCV data for {ticker}/{timeframe}. Ingest data first.",
+        )
+
+    arrays = _rows_to_arrays(rows)
+
+    from analysis.chart_patterns import detect_all_chart_patterns
+    try:
+        patterns = detect_all_chart_patterns(
+            arrays["highs"], arrays["lows"], arrays["closes"], arrays["volumes"]
+        )
+    except Exception as exc:
+        logger.error("Chart pattern detection error for %s/%s: %s", ticker, timeframe, exc)
+        raise HTTPException(status_code=500, detail=f"Chart pattern detection failed: {str(exc)[:200]}")
+
+    # Determine TTL based on timeframe
+    if timeframe == "1d":
+        ttl_seconds = TTL["ta_pattern_daily"]
+    elif timeframe in ("1wk", "1w"):
+        ttl_seconds = TTL["ta_pattern_weekly"]
+    else:
+        ttl_seconds = 300
+
+    response = {
+        "ticker": ticker,
+        "timeframe": timeframe,
+        "patterns": patterns,
+        "bar_count": len(rows),
+    }
+    try:
+        redis_client.set(cache_key, json.dumps(response, default=str), ex=ttl_seconds)
+    except Exception:
+        pass  # cache failure is non-fatal
+
+    return response

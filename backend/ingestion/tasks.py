@@ -2,6 +2,8 @@ import json
 import logging
 from datetime import datetime, timezone
 
+import numpy as np
+
 from celery.exceptions import MaxRetriesExceededError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -279,6 +281,75 @@ def compute_nightly_pivot_points():
             logger.info(f"pivot_points computed: {ticker} 5 methods")
         except Exception as exc:
             logger.error(f"pivot_points failed for {ticker}: {exc}", exc_info=True)
+
+
+@app.task(name="ingestion.compute_nightly_candlestick_stats")
+def compute_nightly_candlestick_stats():
+    """
+    Nightly Celery beat task — TA-09, TA-13.
+    For each seed ticker, reads full OHLCV history from TimescaleDB,
+    computes all 61 CDL pattern win rates + p-values, and upserts into
+    ta_pattern_stats table.  Runs at 21:00 UTC (after pivot task at 20:00).
+    """
+    from analysis.candlestick_patterns import build_pattern_stats_for_ticker
+    from models.ta_pattern_stats import TAPatternStats
+
+    today = datetime.now(timezone.utc).date()
+
+    for ticker in SEED_TICKERS:
+        try:
+            with SessionLocal() as session:
+                rows = (
+                    session.query(OHLCV)
+                    .filter(OHLCV.ticker == ticker, OHLCV.interval == "1d")
+                    .order_by(OHLCV.time.asc())
+                    .all()
+                )
+                if not rows:
+                    logger.warning(f"pattern_stats: no daily bars for {ticker}, skipping")
+                    continue
+
+                opens = np.array([float(r.open) for r in rows], dtype=float)
+                highs = np.array([float(r.high) for r in rows], dtype=float)
+                lows = np.array([float(r.low) for r in rows], dtype=float)
+                closes = np.array([float(r.close) for r in rows], dtype=float)
+
+                pattern_stats = build_pattern_stats_for_ticker(opens, highs, lows, closes)
+
+                # Delete existing rows for this ticker + timeframe + date
+                session.query(TAPatternStats).filter(
+                    TAPatternStats.ticker == ticker,
+                    TAPatternStats.timeframe == "1d",
+                    TAPatternStats.time == datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc),
+                ).delete(synchronize_session=False)
+
+                n_bullish = 0
+                n_bearish = 0
+                run_time = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
+                for stat in pattern_stats:
+                    stat_row = TAPatternStats(
+                        time=run_time,
+                        ticker=ticker,
+                        timeframe="1d",
+                        pattern_name=stat["pattern_name"],
+                        n_occurrences=stat["n_occurrences"],
+                        n_wins=stat["n_wins"] if stat["n_wins"] is not None else 0,
+                        win_rate=stat["win_rate"],
+                        p_value=stat["p_value"],
+                        is_bullish=stat["is_bullish"],
+                    )
+                    session.add(stat_row)
+                    if stat["win_rate"] is not None:
+                        if stat["is_bullish"]:
+                            n_bullish += 1
+                        else:
+                            n_bearish += 1
+                session.commit()
+            logger.info(
+                f"pattern_stats computed: {ticker} — {n_bullish} bullish / {n_bearish} bearish patterns (sufficient data)"
+            )
+        except Exception as exc:
+            logger.error(f"pattern_stats failed for {ticker}: {exc}", exc_info=True)
 
 
 def _upsert_result(session, result: dict) -> None:

@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 04
-last_updated: "2026-03-29T16:35:44.009Z"
+last_updated: "2026-03-29T16:42:39.886Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -93,6 +93,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 04]: TA-Lib 0.6.8 binary wheels install via pip on both local Windows and Docker Linux containers — no Dockerfile changes needed
 - [Phase 04]: pandas-ta (numba) used for HMA, VWMA, KDJ — TA-Lib does not cover these three
 - [Phase 04]: DPO hand-rolled: DPO[i] = Close[i] - SMA(period)[i - period/2 - 1] — no TA-Lib support
+- [Phase 04]: arch library isolated to garch.py to keep heavyweight imports out of indicators.py
+- [Phase 04]: compute_garch_volatility returns error dict on <100 bars — no exception raised, caller-safe pattern
+- [Phase 04]: CMF hand-rolled with numpy rolling window — ADOSC approximation less accurate than direct formula
 
 ## Performance Metrics
 
@@ -117,6 +120,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 03 P03-06 | 148 | 2 tasks | 5 files |
 | Phase 04 P04-00 | 240 | 3 tasks | 11 files |
 | Phase 04 P04-01 | 270 | 2 tasks | 2 files |
+| Phase 04 P04-02 | 301 | 2 tasks | 3 files |
 
 ## Notes
 
@@ -127,5 +131,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: 04-01 complete — TA-01 moving averages and TA-02 momentum/oscillator functions implemented and tested
-- **Timestamp**: 2026-03-29T17:03:00Z
+- **Stopped at**: 04-02 complete — TA-03 trend strength, TA-04 volatility, TA-05 volume functions implemented and tested
+- **Timestamp**: 2026-03-29T17:08:00Z

@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 03
-last_updated: "2026-03-28T21:48:51.840Z"
+status: Executing Phase 04
+last_updated: "2026-03-29T16:28:58.385Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -18,7 +18,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Unified zero-cost research terminal — pull up any instrument instantly with live quotes, charts, indicators, macro context, news sentiment, and positioning data
-**Current focus:** Phase 03 — equity-overview
+**Current focus:** Phase 04 — technical-analysis-engine
 
 ## Current Status
 
@@ -87,6 +87,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 03-05]: IVSurface uses HTML Canvas (not charting library) — compact heatmap strip above options table, no D3/recharts dependency
 - [Phase 03-06]: App outer div changed from min-h-screen to h-screen flex flex-col — Bloomberg layout requires fixed viewport height (D-01: nothing scrolls)
 - [Phase 03-06]: GBP rate fetched once on gbpMode=true, cached in gbpRate state — avoids re-fetch on every render, rate stable within session
+- [Phase 04]: TA-Lib 0.6.8 ships manylinux_2_28 binary wheels — no Dockerfile changes needed for C library
+- [Phase 04]: ta_pattern_stats win_rate and p_value nullable when n_occurrences < 30 (insufficient sample size)
+- [Phase 04]: Wave 0 stubs use pytest.skip() to ensure pytest reports SKIPPED not ERROR for not-yet-implemented tests
 
 ## Performance Metrics
 
@@ -109,6 +112,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 03 P03-04 | 290s | 2 tasks | 6 files |
 | Phase 03 P05 | 412 | 2 tasks | 4 files |
 | Phase 03 P03-06 | 148 | 2 tasks | 5 files |
+| Phase 04 P04-00 | 240 | 3 tasks | 11 files |
 
 ## Notes
 
@@ -119,5 +123,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: 03-06 complete — all 3 tasks done (Tasks 1-2 automated, Task 3 user visual verify approved)
-- **Timestamp**: 2026-03-28T22:00:00Z
+- **Stopped at**: 04-00 complete — all 3 tasks done (packages, DB migration, Wave 0 test stubs)
+- **Timestamp**: 2026-03-29T16:27:46Z

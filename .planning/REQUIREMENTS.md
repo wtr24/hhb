@@ -46,19 +46,19 @@
 
 ### Technical Analysis Engine (Math Engine §8)
 
-- [ ] **TA-01**: All Moving Averages implemented — SMA, EMA, DEMA, TEMA, WMA, HMA, LWMA, VWMA + Golden/Death Cross + EMA Ribbon (8 EMAs)
-- [ ] **TA-02**: All Momentum/Oscillator indicators — RSI, StochRSI, MACD, Stochastic %K/%D, Williams %R, CCI, ROC, Momentum, DPO, TRIX, Ultimate Oscillator, PPO, KDJ, CMO
-- [ ] **TA-03**: All Trend Strength indicators — ADX/+DI/-DI, Aroon, Parabolic SAR, SuperTrend, Vortex, Ichimoku Cloud, Mass Index
-- [ ] **TA-04**: All Volatility indicators — Bollinger Bands + %B, Keltner Channel, Donchian Channel, ATR, Historical Vol (3 methods), GARCH(1,1), Chaikin Vol, Ulcer Index
-- [ ] **TA-05**: All Volume indicators — OBV, VWAP + Anchored VWAP + VWAP SD Bands, A/D Line, CMF, MFI, Volume Profile, CVD, VROC, Ease of Movement, NVI/PVI, Force Index
-- [ ] **TA-06**: All Market Breadth indicators — A/D Line, McClellan Oscillator + Summation, TRIN, New Highs-Lows, Up-Down Volume Ratio, % Above 200/50 SMA, TICK
-- [ ] **TA-07**: All 5 Pivot Point methods — Standard, Woodie's, Camarilla, Fibonacci, DeMark — computed nightly, stored in TimescaleDB, displayed as horizontal lines
-- [ ] **TA-08**: Intermarket analysis indicators — rolling correlation (30D/90D/1Y) for DXY/Gold, Yields/USD, VIX/SPX, Credit Spreads/Equities, Oil/CPI, Copper/Growth, BTC/SPX
-- [ ] **TA-09**: 60+ candlestick patterns detected (TA-Lib) with per-asset historical win rate and p-value (n≥30, out-of-sample only)
-- [ ] **TA-10**: Chart pattern detection — Head & Shoulders, Inverse H&S, Cup & Handle, Double Top/Bottom, Ascending/Descending Triangle, Flag/Pennant, Wedge — with confidence scores labelled experimental
-- [ ] **TA-11**: Fibonacci retracement and extension tools — interactive drawing on chart with 0.236/0.382/0.5/0.618/0.786/1.0/1.618/2.618 levels
-- [ ] **TA-12**: Elliott Wave manual labelling tool with automatic Fibonacci ratio validation (Wave 3 shortest check, Wave 4 overlap check, standard impulse/corrective guidelines)
-- [ ] **TA-13**: Statistical significance layer — every signal shows win rate, p-value, sample size, out-of-sample flag; context filter by trend/volume/key level
+- [x] **TA-01**: All Moving Averages implemented — SMA, EMA, DEMA, TEMA, WMA, HMA, LWMA, VWMA + Golden/Death Cross + EMA Ribbon (8 EMAs)
+- [x] **TA-02**: All Momentum/Oscillator indicators — RSI, StochRSI, MACD, Stochastic %K/%D, Williams %R, CCI, ROC, Momentum, DPO, TRIX, Ultimate Oscillator, PPO, KDJ, CMO
+- [x] **TA-03**: All Trend Strength indicators — ADX/+DI/-DI, Aroon, Parabolic SAR, SuperTrend, Vortex, Ichimoku Cloud, Mass Index
+- [x] **TA-04**: All Volatility indicators — Bollinger Bands + %B, Keltner Channel, Donchian Channel, ATR, Historical Vol (3 methods), GARCH(1,1), Chaikin Vol, Ulcer Index
+- [x] **TA-05**: All Volume indicators — OBV, VWAP + Anchored VWAP + VWAP SD Bands, A/D Line, CMF, MFI, Volume Profile, CVD, VROC, Ease of Movement, NVI/PVI, Force Index
+- [x] **TA-06**: All Market Breadth indicators — A/D Line, McClellan Oscillator + Summation, TRIN, New Highs-Lows, Up-Down Volume Ratio, % Above 200/50 SMA, TICK
+- [x] **TA-07**: All 5 Pivot Point methods — Standard, Woodie's, Camarilla, Fibonacci, DeMark — computed nightly, stored in TimescaleDB, displayed as horizontal lines
+- [x] **TA-08**: Intermarket analysis indicators — rolling correlation (30D/90D/1Y) for DXY/Gold, Yields/USD, VIX/SPX, Credit Spreads/Equities, Oil/CPI, Copper/Growth, BTC/SPX
+- [x] **TA-09**: 60+ candlestick patterns detected (TA-Lib) with per-asset historical win rate and p-value (n≥30, out-of-sample only)
+- [x] **TA-10**: Chart pattern detection — Head & Shoulders, Inverse H&S, Cup & Handle, Double Top/Bottom, Ascending/Descending Triangle, Flag/Pennant, Wedge — with confidence scores labelled experimental
+- [x] **TA-11**: Fibonacci retracement and extension tools — interactive drawing on chart with 0.236/0.382/0.5/0.618/0.786/1.0/1.618/2.618 levels
+- [x] **TA-12**: Elliott Wave manual labelling tool with automatic Fibonacci ratio validation (Wave 3 shortest check, Wave 4 overlap check, standard impulse/corrective guidelines)
+- [x] **TA-13**: Statistical significance layer — every signal shows win rate, p-value, sample size, out-of-sample flag; context filter by trend/volume/key level
 
 ### Macro Dashboard (Module 2)
 

@@ -113,7 +113,7 @@ Plans:
 - [ ] 04-03: Trend strength (§C), Volatility (§D), Volume indicators (§E)
 - [ ] 04-04: Market breadth (§F), Pivot Points 5 methods (§G), Intermarket indicators (§H)
 - [ ] 04-05: Candlestick pattern detection (60+ via TA-Lib) + per-asset win rate + p-value statistical significance layer (§O)
-- [ ] 04-06: Chart pattern detection (H&S, Cup & Handle, Double Top/Bottom, Triangles, Flags) with confidence scores
+- [x] 04-06: Chart pattern detection (H&S, Cup & Handle, Double Top/Bottom, Triangles, Flags) with confidence scores
 - [ ] 04-07: Fibonacci retracement/extension drawing tool + Elliott Wave manual labeller + Fibonacci validation; indicator picker frontend
 
 ---

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 04
-last_updated: "2026-03-29T16:28:58.385Z"
+last_updated: "2026-03-29T16:35:44.009Z"
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 18
-  completed_plans: 18
+  completed_plans: 19
 ---
 
 # Project State
@@ -90,6 +90,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 04]: TA-Lib 0.6.8 ships manylinux_2_28 binary wheels — no Dockerfile changes needed for C library
 - [Phase 04]: ta_pattern_stats win_rate and p_value nullable when n_occurrences < 30 (insufficient sample size)
 - [Phase 04]: Wave 0 stubs use pytest.skip() to ensure pytest reports SKIPPED not ERROR for not-yet-implemented tests
+- [Phase 04]: TA-Lib 0.6.8 binary wheels install via pip on both local Windows and Docker Linux containers — no Dockerfile changes needed
+- [Phase 04]: pandas-ta (numba) used for HMA, VWMA, KDJ — TA-Lib does not cover these three
+- [Phase 04]: DPO hand-rolled: DPO[i] = Close[i] - SMA(period)[i - period/2 - 1] — no TA-Lib support
 
 ## Performance Metrics
 
@@ -113,6 +116,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 03 P05 | 412 | 2 tasks | 4 files |
 | Phase 03 P03-06 | 148 | 2 tasks | 5 files |
 | Phase 04 P04-00 | 240 | 3 tasks | 11 files |
+| Phase 04 P04-01 | 270 | 2 tasks | 2 files |
 
 ## Notes
 
@@ -123,5 +127,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: 04-00 complete — all 3 tasks done (packages, DB migration, Wave 0 test stubs)
-- **Timestamp**: 2026-03-29T16:27:46Z
+- **Stopped at**: 04-01 complete — TA-01 moving averages and TA-02 momentum/oscillator functions implemented and tested
+- **Timestamp**: 2026-03-29T17:03:00Z

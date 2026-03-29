@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 04
-last_updated: "2026-03-29T20:37:43.341Z"
+last_updated: "2026-03-29T20:50:37.241Z"
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 18
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # Project State
@@ -107,6 +107,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 04]: Fibonacci route uses POST (not GET) — user-provided swing points are request body data, not path/query params
 - [Phase 04]: Fibonacci levels include 0.0 prepended making total 9 levels (0.0 + 8 ratios) for frontend completeness
 - [Phase 04]: No Redis caching on Fibonacci or EW routes — computations are instant and inputs unique per interaction
+- [Phase 04]: OverlayConfig defined in CandleChart (not ExpandedChart) to avoid circular import
+- [Phase 04]: Separate lightweight-charts instances per oscillator sub-pane for layout simplicity
+- [Phase 04]: VOL_PROFILE uses CSS div-based histogram overlay (not chart series) in ExpandedChart
 
 ## Performance Metrics
 
@@ -137,6 +140,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 04 P04-05 | 234 | 3 tasks | 5 files |
 | Phase 04 P04-06 | 90s | 2 tasks | 3 files |
 | Phase 04 P04-07 | 185 | 3 tasks | 5 files |
+| Phase 04 P04-08 | 606 | 4 tasks | 6 files |
 
 ## Notes
 
@@ -147,5 +151,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 04-07 (Fibonacci levels + Elliott Wave validation — TA-11, TA-12)
-- **Timestamp**: 2026-03-29T21:04:00Z
+- **Stopped at**: Completed 04-08 (Frontend — Indicator Picker, Sub-Panes, Overlay Series — TA-01 through TA-08)
+- **Timestamp**: 2026-03-29T22:04:00Z

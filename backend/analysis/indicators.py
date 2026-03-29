@@ -294,3 +294,261 @@ def compute_cmo(closes: np.ndarray, times: np.ndarray, period: int = 14) -> dict
     values = talib.CMO(closes, timeperiod=period)
     t, v = _strip_nan(times, values)
     return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+# ──────────────────────────────────────────────────────────
+# TA-03  Trend Strength
+# ──────────────────────────────────────────────────────────
+
+def compute_adx(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                times: np.ndarray, period: int = 14) -> dict:
+    """ADX + +DI + -DI via talib.ADX / PLUS_DI / MINUS_DI."""
+    adx = talib.ADX(highs, lows, closes, timeperiod=period)
+    plus_di = talib.PLUS_DI(highs, lows, closes, timeperiod=period)
+    minus_di = talib.MINUS_DI(highs, lows, closes, timeperiod=period)
+    mask = ~(np.isnan(adx) | np.isnan(plus_di) | np.isnan(minus_di))
+    return {
+        "times": times[mask].tolist(),
+        "adx": np.round(adx[mask], 4).tolist(),
+        "plus_di": np.round(plus_di[mask], 4).tolist(),
+        "minus_di": np.round(minus_di[mask], 4).tolist(),
+    }
+
+
+def compute_aroon(highs: np.ndarray, lows: np.ndarray, times: np.ndarray,
+                   period: int = 25) -> dict:
+    """Aroon Up/Down via talib.AROON. Aroon Oscillator via talib.AROONOSC."""
+    aroon_down, aroon_up = talib.AROON(highs, lows, timeperiod=period)
+    osc = talib.AROONOSC(highs, lows, timeperiod=period)
+    mask = ~(np.isnan(aroon_up) | np.isnan(aroon_down))
+    return {
+        "times": times[mask].tolist(),
+        "aroon_up": np.round(aroon_up[mask], 4).tolist(),
+        "aroon_down": np.round(aroon_down[mask], 4).tolist(),
+        "oscillator": np.round(osc[mask], 4).tolist(),
+    }
+
+
+def compute_parabolic_sar(highs: np.ndarray, lows: np.ndarray, times: np.ndarray,
+                           acceleration: float = 0.02, maximum: float = 0.2) -> dict:
+    """Parabolic SAR via talib.SAR. Returns dot prices and position (above/below)."""
+    sar = talib.SAR(highs, lows, acceleration=acceleration, maximum=maximum)
+    t, v = _strip_nan(times, sar)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_supertrend(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                        times: np.ndarray, period: int = 7, multiplier: float = 3.0) -> dict:
+    """
+    SuperTrend via pandas_ta (TA-Lib does not include SuperTrend).
+    Returns supertrend values and direction (+1 bullish, -1 bearish).
+    """
+    import pandas as pd
+    import pandas_ta as pta
+    df = pd.DataFrame({"high": highs, "low": lows, "close": closes})
+    result = pta.supertrend(df["high"], df["low"], df["close"],
+                             length=period, multiplier=multiplier)
+    # pandas_ta returns DataFrame: SUPERT_7_3.0, SUPERTd_7_3.0, SUPERTl_7_3.0, SUPERTs_7_3.0
+    col_st = [c for c in result.columns if c.startswith("SUPERT_")][0]
+    col_dir = [c for c in result.columns if c.startswith("SUPERTd_")][0]
+    st_vals = result[col_st].to_numpy()
+    dir_vals = result[col_dir].to_numpy()
+    mask = ~np.isnan(st_vals)
+    return {
+        "times": times[mask].tolist(),
+        "values": np.round(st_vals[mask], 4).tolist(),
+        "direction": dir_vals[mask].astype(int).tolist(),
+    }
+
+
+def compute_vortex(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                    times: np.ndarray, period: int = 14) -> dict:
+    """Vortex Indicator +VI and -VI via pandas_ta (not in TA-Lib)."""
+    import pandas as pd
+    import pandas_ta as pta
+    result = pta.vortex(pd.Series(highs), pd.Series(lows), pd.Series(closes), length=period)
+    col_plus = [c for c in result.columns if "VTXP" in c or "VI+" in c][0]
+    col_minus = [c for c in result.columns if "VTXM" in c or "VI-" in c][0]
+    vp = result[col_plus].to_numpy()
+    vm = result[col_minus].to_numpy()
+    mask = ~(np.isnan(vp) | np.isnan(vm))
+    return {
+        "times": times[mask].tolist(),
+        "vi_plus": np.round(vp[mask], 4).tolist(),
+        "vi_minus": np.round(vm[mask], 4).tolist(),
+    }
+
+
+def compute_ichimoku(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                      times: np.ndarray,
+                      tenkan: int = 9, kijun: int = 26, senkou_b: int = 52) -> dict:
+    """
+    Ichimoku Cloud via pandas_ta (TA-Lib does not include Ichimoku).
+    Returns: tenkan_sen, kijun_sen, senkou_a, senkou_b, chikou_span.
+    """
+    import pandas as pd
+    import pandas_ta as pta
+    df = pd.DataFrame({"high": highs, "low": lows, "close": closes})
+    result = pta.ichimoku(df["high"], df["low"], df["close"],
+                           tenkan=tenkan, kijun=kijun, senkou=senkou_b)
+    # pandas_ta.ichimoku returns a tuple (span_df, cloud_df)
+    span_df = result[0]
+    # Column names: ISA_9, ISB_26, ITS_9, IKS_26, ICS_26 (vary by period params)
+    def _col(prefix):
+        return [c for c in span_df.columns if c.startswith(prefix)][0]
+    tenkan_col = _col("ITS")
+    kijun_col = _col("IKS")
+    senkou_a_col = _col("ISA")
+    senkou_b_col = _col("ISB")
+    chikou_col = _col("ICS")
+    mask = ~np.isnan(span_df[tenkan_col].to_numpy())
+    t = times[mask]
+    return {
+        "times": t.tolist(),
+        "tenkan_sen": np.round(span_df[tenkan_col].to_numpy()[mask], 4).tolist(),
+        "kijun_sen": np.round(span_df[kijun_col].to_numpy()[mask], 4).tolist(),
+        "senkou_a": np.round(span_df[senkou_a_col].to_numpy()[mask], 4).tolist(),
+        "senkou_b": np.round(span_df[senkou_b_col].to_numpy()[mask], 4).tolist(),
+        "chikou_span": np.round(span_df[chikou_col].to_numpy()[mask], 4).tolist(),
+    }
+
+
+def compute_mass_index(highs: np.ndarray, lows: np.ndarray, times: np.ndarray,
+                        fast: int = 9, slow: int = 25) -> dict:
+    """Mass Index via talib (uses EMA of high-low range). No direct talib.MASS — hand-rolled."""
+    hl_range = highs - lows
+    ema1 = talib.EMA(hl_range, timeperiod=fast)
+    ema2 = talib.EMA(ema1, timeperiod=fast)
+    ratio = np.where(ema2 != 0, ema1 / ema2, np.nan)
+    # Rolling sum of ratio over slow period
+    mass = np.full(len(highs), np.nan)
+    for i in range(slow - 1, len(ratio)):
+        window = ratio[i - slow + 1:i + 1]
+        if not np.any(np.isnan(window)):
+            mass[i] = np.sum(window)
+    t, v = _strip_nan(times, mass)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+# ──────────────────────────────────────────────────────────
+# TA-04  Volatility
+# ──────────────────────────────────────────────────────────
+
+def compute_bollinger_bands(closes: np.ndarray, times: np.ndarray,
+                             period: int = 20, std_dev: float = 2.0) -> dict:
+    """Bollinger Bands (upper, middle, lower) + %B via talib.BBANDS."""
+    upper, middle, lower = talib.BBANDS(closes, timeperiod=period,
+                                          nbdevup=std_dev, nbdevdn=std_dev, matype=0)
+    mask = ~(np.isnan(upper) | np.isnan(middle) | np.isnan(lower))
+    u, m, l, t = upper[mask], middle[mask], lower[mask], times[mask]
+    pct_b = np.where((u - l) != 0, (closes[mask] - l) / (u - l), 0.5)
+    return {
+        "times": t.tolist(),
+        "upper": np.round(u, 4).tolist(),
+        "middle": np.round(m, 4).tolist(),
+        "lower": np.round(l, 4).tolist(),
+        "pct_b": np.round(pct_b, 4).tolist(),
+    }
+
+
+def compute_keltner_channel(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                              times: np.ndarray, ema_period: int = 20,
+                              atr_period: int = 10, multiplier: float = 2.0) -> dict:
+    """Keltner Channel via pandas_ta (TA-Lib has no direct Keltner)."""
+    import pandas as pd
+    import pandas_ta as pta
+    result = pta.kc(pd.Series(highs), pd.Series(lows), pd.Series(closes),
+                    length=ema_period, scalar=multiplier, mamode="ema")
+    col_u = [c for c in result.columns if "KCUe" in c or "U_" in c.upper()][0]
+    col_m = [c for c in result.columns if "KCBe" in c or "B_" in c.upper()][0]
+    col_l = [c for c in result.columns if "KCLe" in c or "L_" in c.upper()][0]
+    u = result[col_u].to_numpy()
+    m = result[col_m].to_numpy()
+    l = result[col_l].to_numpy()
+    mask = ~(np.isnan(u) | np.isnan(m) | np.isnan(l))
+    return {
+        "times": times[mask].tolist(),
+        "upper": np.round(u[mask], 4).tolist(),
+        "middle": np.round(m[mask], 4).tolist(),
+        "lower": np.round(l[mask], 4).tolist(),
+    }
+
+
+def compute_donchian_channel(highs: np.ndarray, lows: np.ndarray, times: np.ndarray,
+                              period: int = 20) -> dict:
+    """Donchian Channel (highest high / lowest low over N bars) — hand-rolled with numpy."""
+    upper = np.full(len(highs), np.nan)
+    lower = np.full(len(lows), np.nan)
+    for i in range(period - 1, len(highs)):
+        upper[i] = np.max(highs[i - period + 1:i + 1])
+        lower[i] = np.min(lows[i - period + 1:i + 1])
+    middle = (upper + lower) / 2
+    mask = ~(np.isnan(upper) | np.isnan(lower))
+    return {
+        "times": times[mask].tolist(),
+        "upper": np.round(upper[mask], 4).tolist(),
+        "middle": np.round(middle[mask], 4).tolist(),
+        "lower": np.round(lower[mask], 4).tolist(),
+    }
+
+
+def compute_atr(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                 times: np.ndarray, period: int = 14) -> dict:
+    """Average True Range via talib.ATR."""
+    values = talib.ATR(highs, lows, closes, timeperiod=period)
+    t, v = _strip_nan(times, values)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_historical_vol(closes: np.ndarray, times: np.ndarray,
+                            period: int = 20) -> dict:
+    """
+    Historical Volatility — 3 methods:
+    1. Close-to-close (standard deviation of log returns * sqrt(252))
+    2. Parkinson (using High-Low) — requires highs/lows; falls back to close-to-close if not provided
+    3. Yang-Zhang — most accurate; requires OHLC
+    Only close-to-close is computed here (close array only). For Parkinson/Yang-Zhang
+    use compute_historical_vol_parkinson and compute_historical_vol_yang_zhang.
+    """
+    log_returns = np.diff(np.log(closes))
+    hv = np.full(len(closes), np.nan)
+    for i in range(period, len(log_returns) + 1):
+        window = log_returns[i - period:i]
+        hv[i] = np.std(window, ddof=1) * np.sqrt(252)
+    t, v = _strip_nan(times, hv)
+    return {"times": t.tolist(), "values": np.round(v, 6).tolist(), "method": "close_to_close"}
+
+
+def compute_historical_vol_parkinson(highs: np.ndarray, lows: np.ndarray,
+                                      times: np.ndarray, period: int = 20) -> dict:
+    """Parkinson Historical Volatility using High-Low range."""
+    log_hl = np.log(highs / lows) ** 2
+    factor = 1.0 / (4 * np.log(2))
+    hv = np.full(len(highs), np.nan)
+    for i in range(period - 1, len(highs)):
+        window = log_hl[i - period + 1:i + 1]
+        hv[i] = np.sqrt(factor * np.mean(window) * 252)
+    t, v = _strip_nan(times, hv)
+    return {"times": t.tolist(), "values": np.round(v, 6).tolist(), "method": "parkinson"}
+
+
+def compute_chaikin_volatility(highs: np.ndarray, lows: np.ndarray, times: np.ndarray,
+                                ema_period: int = 10, roc_period: int = 10) -> dict:
+    """Chaikin Volatility: ROC of EMA of (High - Low)."""
+    hl = highs - lows
+    ema_hl = talib.EMA(hl, timeperiod=ema_period)
+    cv = talib.ROC(ema_hl, timeperiod=roc_period)
+    t, v = _strip_nan(times, cv)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_ulcer_index(closes: np.ndarray, times: np.ndarray, period: int = 14) -> dict:
+    """Ulcer Index: RMS of percentage drawdown from recent N-bar high."""
+    ui = np.full(len(closes), np.nan)
+    for i in range(period - 1, len(closes)):
+        window = closes[i - period + 1:i + 1]
+        peak = np.max(window)
+        drawdowns = ((window - peak) / peak * 100) ** 2
+        ui[i] = np.sqrt(np.mean(drawdowns))
+    t, v = _strip_nan(times, ui)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}

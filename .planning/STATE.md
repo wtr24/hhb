@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 04
-last_updated: "2026-03-29T20:19:08.120Z"
+last_updated: "2026-03-29T20:27:26.416Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -100,6 +100,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 04]: [Phase 04-03]: pivot_points nightly task uses delete+insert pattern (not upsert) — PivotPoints composite PK has 4 columns, simplest correctness path
 - [Phase 04]: deps.py does not exist — used ..database.get_async_db and ..redis_client.get_redis to match equity.py pattern (plan had wrong import path)
 - [Phase 04]: TA dispatch dict uses _build_dispatch() closures per request — binds numpy arrays in scope, avoids global state leakage
+- [Phase 04]: OOS split is last 20% of bars for pattern stats (not a fixed date) — consistent with plan spec D-10
+- [Phase 04]: Candlestick task function in tasks.py (not celery_app.py); beat schedule in celery_app.py — avoids circular import
 
 ## Performance Metrics
 
@@ -127,6 +129,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 04 P04-02 | 301 | 2 tasks | 3 files |
 | Phase 04 P04-03 | 267 | 4 tasks | 6 files |
 | Phase 04 P04-04 | 264 | 2 tasks | 2 files |
+| Phase 04 P04-05 | 234 | 3 tasks | 5 files |
 
 ## Notes
 

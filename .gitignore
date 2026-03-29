@@ -9,3 +9,4 @@ dist/
 .pytest_cache/
 timescaledb_data/
 .DS_Store
+.planning/BRIEF.md

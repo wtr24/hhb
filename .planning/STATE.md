@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 04
-last_updated: "2026-03-29T16:42:39.886Z"
+last_updated: "2026-03-29T20:09:07.640Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -96,6 +96,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 04]: arch library isolated to garch.py to keep heavyweight imports out of indicators.py
 - [Phase 04]: compute_garch_volatility returns error dict on <100 bars — no exception raised, caller-safe pattern
 - [Phase 04]: CMF hand-rolled with numpy rolling window — ADOSC approximation less accurate than direct formula
+- [Phase 04]: [Phase 04-03]: Celery task compute_nightly_pivot_points placed in tasks.py (not celery_app.py) for consistency with existing task function placement pattern
+- [Phase 04]: [Phase 04-03]: pivot_points nightly task uses delete+insert pattern (not upsert) — PivotPoints composite PK has 4 columns, simplest correctness path
 
 ## Performance Metrics
 
@@ -121,6 +123,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 04 P04-00 | 240 | 3 tasks | 11 files |
 | Phase 04 P04-01 | 270 | 2 tasks | 2 files |
 | Phase 04 P04-02 | 301 | 2 tasks | 3 files |
+| Phase 04 P04-03 | 267 | 4 tasks | 6 files |
 
 ## Notes
 
@@ -131,5 +134,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: 04-02 complete — TA-03 trend strength, TA-04 volatility, TA-05 volume functions implemented and tested
-- **Timestamp**: 2026-03-29T17:08:00Z
+- **Stopped at**: 04-03 complete — TA-06 breadth, TA-07 pivot points, TA-08 intermarket correlations implemented and tested
+- **Timestamp**: 2026-03-29T17:43:00Z

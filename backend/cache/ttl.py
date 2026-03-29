@@ -10,6 +10,8 @@ TTL = {
     "news": 300,
     "screener": 900,
     "crypto_marketcap": 600,
+    "ta_pattern_daily": 900,    # 15-minute TTL for chart-pattern detection on daily timeframe
+    "ta_pattern_weekly": 3600,  # 1-hour TTL for chart-pattern detection on weekly timeframe
 }
 
 

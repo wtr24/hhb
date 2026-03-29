@@ -1,10 +1,15 @@
 """
-Technical Analysis REST endpoints — TA-01 through TA-08.
+Technical Analysis REST endpoints — TA-01 through TA-12.
 
-Three routes:
-  GET /api/ta/indicators/{ticker}  — compute any indicator on OHLCV data
-  GET /api/ta/pivots/{ticker}       — serve pre-computed pivot point levels
-  GET /api/ta/intermarket/{ticker}  — rolling correlations for intermarket pairs
+Routes:
+  GET  /api/ta/indicators/{ticker}       — compute any indicator on OHLCV data
+  GET  /api/ta/pivots/{ticker}           — serve pre-computed pivot point levels
+  GET  /api/ta/intermarket/{ticker}      — rolling correlations for intermarket pairs
+  GET  /api/ta/patterns/{ticker}         — candlestick pattern detections
+  GET  /api/ta/pattern-stats/{ticker}    — historical pattern win rates
+  GET  /api/ta/chart-patterns/{ticker}   — heuristic chart pattern detections
+  POST /api/ta/fibonacci                 — Fibonacci retracement/extension levels (TA-11)
+  POST /api/ta/elliott-wave/validate     — Elliott Wave Fibonacci ratio validation (TA-12)
 
 Mirrors the DB session dependency, Redis cache helper, and error-handling
 patterns established in backend/api/routes/equity.py.
@@ -15,6 +20,7 @@ from typing import Optional
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -642,3 +648,95 @@ async def get_chart_patterns(
         pass  # cache failure is non-fatal
 
     return response
+
+
+# ---------------------------------------------------------------------------
+# Pydantic request models — TA-11 and TA-12
+# ---------------------------------------------------------------------------
+
+class FibonacciRequest(BaseModel):
+    swing_high: float
+    swing_low: float
+    include_extensions: bool = False
+    pullback: Optional[float] = None
+
+
+class WavePoint(BaseModel):
+    bar_idx: int
+    price: float
+
+
+class ElliottWaveRequest(BaseModel):
+    wave_points: list[WavePoint]
+
+
+# ---------------------------------------------------------------------------
+# Route 7: Fibonacci retracement/extension levels (TA-11)
+# ---------------------------------------------------------------------------
+
+@router.post("/fibonacci")
+async def get_fibonacci_levels(body: FibonacciRequest):
+    """Return Fibonacci retracement (and optionally extension) price levels.
+
+    Body: {swing_high, swing_low, include_extensions (optional), pullback (optional)}
+    Returns 400 if swing_high == swing_low or if include_extensions=true without pullback.
+    No caching — computation is instant and inputs are unique per user interaction.
+    """
+    if body.swing_high == body.swing_low:
+        raise HTTPException(
+            status_code=400,
+            detail="swing_high and swing_low must be different prices",
+        )
+
+    if body.include_extensions and body.pullback is None:
+        raise HTTPException(
+            status_code=400,
+            detail="pullback is required when include_extensions=true",
+        )
+
+    from analysis.fibonacci import compute_fibonacci_levels, compute_fibonacci_extensions
+
+    try:
+        levels = compute_fibonacci_levels(body.swing_high, body.swing_low)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    extensions = None
+    if body.include_extensions and body.pullback is not None:
+        extensions = compute_fibonacci_extensions(body.swing_high, body.swing_low, body.pullback)
+
+    return {
+        "levels": levels,
+        "extensions": extensions,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Route 8: Elliott Wave validation (TA-12)
+# ---------------------------------------------------------------------------
+
+@router.post("/elliott-wave/validate")
+async def validate_elliott_wave(body: ElliottWaveRequest):
+    """Validate Elliott Wave Fibonacci ratio rules for a sequence of wave points.
+
+    Body: {wave_points: [{bar_idx, price}, ...]}
+    Returns 400 if fewer than 2 wave points provided.
+    Returns one validation result per applicable rule.
+    No caching.
+    """
+    wave_points = [wp.model_dump() for wp in body.wave_points]
+
+    if len(wave_points) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="At least 2 wave_points are required",
+        )
+
+    from analysis.elliott_wave import validate_wave_sequence
+
+    validations = validate_wave_sequence(wave_points)
+
+    return {
+        "validations": validations,
+        "n_points": len(wave_points),
+    }

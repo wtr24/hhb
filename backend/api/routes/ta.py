@@ -26,6 +26,7 @@ from analysis.pivot_points import compute_all_methods  # noqa: F401 (not used in
 from analysis.intermarket import compute_rolling_correlation, INTERMARKET_PAIRS
 from models.ohlcv import OHLCV
 from models.pivot_points import PivotPoints
+from models.ta_pattern_stats import TAPatternStats
 
 logger = logging.getLogger(__name__)
 
@@ -400,3 +401,164 @@ async def get_intermarket(
         pass  # cache failure is non-fatal
 
     return response
+
+
+# ---------------------------------------------------------------------------
+# Route 4: Candlestick pattern detections (current bar)
+# ---------------------------------------------------------------------------
+
+@router.get("/patterns/{ticker}")
+async def get_patterns(
+    ticker: str,
+    timeframe: str = Query(default="1d", description="OHLCV interval (1d, 1wk, 1h, 4h)"),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Return candlestick patterns active on the most recent bar for the given ticker.
+
+    Runs all 61 TA-Lib CDL* functions on the last ~200 bars.
+    Fetches pre-computed stats (win_rate, p_value) from ta_pattern_stats for each active pattern.
+    Returns only patterns where the last bar signal != 0.
+    Cache TTL: 300 seconds.
+    """
+    cache_key = f"ta:patterns:{ticker}:{timeframe}"
+    redis_client = get_redis()
+    cached_raw = redis_client.get(cache_key)
+    if cached_raw:
+        try:
+            return json.loads(cached_raw)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    rows = await _fetch_ohlcv_rows(ticker, timeframe, db)
+    if not rows:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No OHLCV data for {ticker}/{timeframe}. Ingest data first.",
+        )
+
+    arrays = _rows_to_arrays(rows)
+
+    # Import lazily to avoid circular import and keep module load fast
+    from analysis.candlestick_patterns import detect_all_patterns
+    all_signals = detect_all_patterns(
+        arrays["opens"], arrays["highs"], arrays["lows"], arrays["closes"]
+    )
+
+    # Only patterns active on the LAST bar
+    active_pattern_names = [
+        name for name, sig_arr in all_signals.items()
+        if len(sig_arr) > 0 and sig_arr[-1] != 0
+    ]
+    last_signals = {name: int(all_signals[name][-1]) for name in active_pattern_names}
+
+    # Determine last bar date for response
+    last_bar_date = str(rows[-1].time.date()) if hasattr(rows[-1].time, "date") else str(rows[-1].time)
+
+    # Fetch pre-computed stats from DB for each active pattern
+    stats_map: dict[str, dict] = {}
+    if active_pattern_names:
+        from sqlalchemy import text
+        result = await db.execute(
+            select(TAPatternStats)
+            .where(
+                TAPatternStats.ticker == ticker,
+                TAPatternStats.timeframe == timeframe,
+                TAPatternStats.pattern_name.in_(active_pattern_names),
+            )
+            .order_by(desc(TAPatternStats.time))
+        )
+        stat_rows = result.scalars().all()
+        # Keep only the most recent stat per pattern
+        for sr in stat_rows:
+            if sr.pattern_name not in stats_map:
+                stats_map[sr.pattern_name] = {
+                    "win_rate": sr.win_rate,
+                    "p_value": sr.p_value,
+                    "n_occurrences": sr.n_occurrences,
+                    "is_bullish": sr.is_bullish,
+                }
+
+    patterns = []
+    for name in active_pattern_names:
+        stat = stats_map.get(name, {})
+        patterns.append({
+            "name": name,
+            "signal": last_signals[name],
+            "win_rate": stat.get("win_rate"),
+            "p_value": stat.get("p_value"),
+            "n_occurrences": stat.get("n_occurrences"),
+            "is_bullish": stat.get("is_bullish", last_signals[name] == 100),
+        })
+
+    response = {
+        "ticker": ticker,
+        "timeframe": timeframe,
+        "bar_date": last_bar_date,
+        "patterns": patterns,
+    }
+    try:
+        redis_client.set(cache_key, json.dumps(response, default=str), ex=300)
+    except Exception:
+        pass  # cache failure is non-fatal
+
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Route 5: Pattern stats (historical win rates)
+# ---------------------------------------------------------------------------
+
+@router.get("/pattern-stats/{ticker}")
+async def get_pattern_stats(
+    ticker: str,
+    timeframe: str = Query(default="1d", description="OHLCV interval (1d, 1wk)"),
+    pattern: Optional[str] = Query(default=None, description="Filter by pattern name (returns all if omitted)"),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Return pre-computed win rates and p-values for candlestick patterns.
+
+    Queries ta_pattern_stats for most recent nightly run for this ticker/timeframe.
+    Optionally filter by pattern name.
+    Returns all patterns with win_rate, p_value, n_occurrences.
+    """
+    query = (
+        select(TAPatternStats)
+        .where(
+            TAPatternStats.ticker == ticker,
+            TAPatternStats.timeframe == timeframe,
+        )
+        .order_by(desc(TAPatternStats.time))
+    )
+    if pattern:
+        query = query.where(TAPatternStats.pattern_name == pattern.upper())
+
+    result = await db.execute(query.limit(200))
+    stat_rows = result.scalars().all()
+
+    if not stat_rows:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No pattern stats for {ticker}/{timeframe}. Run the nightly candlestick stats task first.",
+        )
+
+    # Deduplicate: keep one row per pattern (most recent time already sorted by ORDER BY DESC)
+    seen: set[str] = set()
+    patterns_out = []
+    for row in stat_rows:
+        if row.pattern_name not in seen:
+            seen.add(row.pattern_name)
+            patterns_out.append({
+                "pattern_name": row.pattern_name,
+                "is_bullish": row.is_bullish,
+                "n_occurrences": row.n_occurrences,
+                "n_wins": row.n_wins,
+                "win_rate": row.win_rate,
+                "p_value": row.p_value,
+                "computed_at": row.time.isoformat() if hasattr(row.time, "isoformat") else str(row.time),
+            })
+
+    return {
+        "ticker": ticker,
+        "timeframe": timeframe,
+        "patterns": patterns_out,
+    }

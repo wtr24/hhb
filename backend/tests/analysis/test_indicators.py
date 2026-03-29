@@ -1,7 +1,12 @@
-"""TA-01 through TA-05 indicator tests — Wave 1 implementation."""
+"""TA-01 through TA-08 indicator tests — Wave 1 implementation."""
 import pytest
 import numpy as np
 
+from analysis.breadth import (
+    compute_advance_decline_line, compute_mcclellan, compute_trin,
+    compute_pct_above_sma,
+)
+from analysis.intermarket import compute_rolling_correlation
 from analysis.indicators import (
     compute_sma, compute_ema, compute_hma, compute_vwma,
     compute_golden_death_cross, compute_ema_ribbon,
@@ -235,15 +240,47 @@ def test_volume_cmf(ohlcv_100):
 
 # TA-06 Market Breadth
 def test_breadth_mcclellan(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-06")
+    np.random.seed(10)
+    advances = np.random.randint(100, 300, size=100).astype(float)
+    declines = np.random.randint(100, 300, size=100).astype(float)
+    times = np.arange(100, dtype=float)
+    result = compute_mcclellan(advances, declines, times)
+    assert "oscillator" in result
+    assert "summation" in result
+    assert len(result["oscillator"]) > 0
+    assert len(result["summation"]) > 0
+
 
 def test_breadth_trin(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-06")
+    times = np.arange(10, dtype=float)
+    advances = np.full(10, 200.0)
+    declines = np.full(10, 200.0)
+    up_volume = np.full(10, 1_000_000.0)
+    down_volume = np.full(10, 1_000_000.0)
+    result = compute_trin(advances, declines, up_volume, down_volume, times)
+    assert len(result["values"]) > 0
+    assert all(v > 0 for v in result["values"])
+    # Equal advances/declines and equal volumes => TRIN == 1.0
+    assert all(abs(v - 1.0) < 1e-6 for v in result["values"])
+
 
 def test_breadth_pct_above_sma(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-06")
+    np.random.seed(7)
+    # 100 bars, 5 constituent stocks with trending prices
+    prices = 100 + np.cumsum(np.random.randn(100, 5) * 0.5, axis=0)
+    times = np.arange(100, dtype=float)
+    result = compute_pct_above_sma(prices, period=20, times=times)
+    assert len(result["values"]) > 0
+    assert all(0.0 <= v <= 100.0 for v in result["values"])
 
 
 # TA-08 Intermarket
 def test_intermarket_correlation(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-08")
+    np.random.seed(42)
+    n = 100
+    times = np.arange(n, dtype=float)
+    series_a = 100 + np.cumsum(np.random.randn(n) * 0.5)
+    series_b = 100 + np.cumsum(np.random.randn(n) * 0.5)
+    result = compute_rolling_correlation(series_a, series_b, times, window=30)
+    assert len(result["values"]) > 0
+    assert all(-1.0 <= v <= 1.0 for v in result["values"])

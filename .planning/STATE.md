@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 04
-last_updated: "2026-03-29T20:31:36Z"
+last_updated: "2026-03-29T20:37:43.341Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -104,6 +104,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 04]: Candlestick task function in tasks.py (not celery_app.py); beat schedule in celery_app.py — avoids circular import
 - [Phase 04-06]: detect_all_chart_patterns wraps each detector with try/except — one failing detector does not abort the aggregator
 - [Phase 04-06]: TTL imported from cache.ttl.TTL dict directly in route handler (not via cache_set helper) — consistent with other ta.py route patterns
+- [Phase 04]: Fibonacci route uses POST (not GET) — user-provided swing points are request body data, not path/query params
+- [Phase 04]: Fibonacci levels include 0.0 prepended making total 9 levels (0.0 + 8 ratios) for frontend completeness
+- [Phase 04]: No Redis caching on Fibonacci or EW routes — computations are instant and inputs unique per interaction
 
 ## Performance Metrics
 
@@ -133,6 +136,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 04 P04-04 | 264 | 2 tasks | 2 files |
 | Phase 04 P04-05 | 234 | 3 tasks | 5 files |
 | Phase 04 P04-06 | 90s | 2 tasks | 3 files |
+| Phase 04 P04-07 | 185 | 3 tasks | 5 files |
 
 ## Notes
 
@@ -143,5 +147,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 04-06 (TA-10 chart pattern detection module + chart-patterns route)
-- **Timestamp**: 2026-03-29T20:31:36Z
+- **Stopped at**: Completed 04-07 (Fibonacci levels + Elliott Wave validation — TA-11, TA-12)
+- **Timestamp**: 2026-03-29T21:04:00Z

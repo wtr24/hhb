@@ -22,6 +22,7 @@ import { ShortInterestPanel } from './ShortInterestPanel';
 import { InsiderPanel } from './InsiderPanel';
 import { NewsPanel } from './NewsPanel';
 import OptionsChain from './OptionsChain';
+import type { ActiveIndicator, IndicatorDefinition } from './IndicatorPicker';
 
 interface FXRateResponse {
   rate: number;
@@ -31,6 +32,12 @@ export function EquityModule() {
   const [ticker, setTicker] = useState<string>('');
   const [gbpMode, setGbpMode] = useState(false);
   const [gbpRate, setGbpRate] = useState<number | null>(null);
+
+  // TA indicator state (TA-01 through TA-08)
+  const [activeIndicators, setActiveIndicators] = useState<ActiveIndicator[]>([]);
+  const [fibActive, setFibActive] = useState(false);
+  const [ewActive, setEwActive] = useState(false);
+  const [indicatorPickerOpen, setIndicatorPickerOpen] = useState(false);
 
   const quote = useEquityWebSocket(ticker);
   const { chartData, earningsMarkers, dividendMarkers } = useEquityData(ticker);
@@ -55,8 +62,51 @@ export function EquityModule() {
     setGbpMode((prev) => !prev);
   }
 
+  // Indicator handlers
+  function handleToggleIndicator(def: IndicatorDefinition) {
+    setActiveIndicators((prev) => {
+      const existing = prev.find((a) => a.name === def.name);
+      if (existing) {
+        // Remove it
+        return prev.filter((a) => a.name !== def.name);
+      }
+      // Add it with a unique id
+      const id = `${def.name}_${Object.values(def.defaultParams).join('_') || 'default'}`;
+      return [
+        ...prev,
+        {
+          id,
+          name: def.name,
+          label: def.label,
+          params: { ...def.defaultParams },
+          paneType: def.paneType,
+        },
+      ];
+    });
+  }
+
+  function handleIndicatorParamChange(id: string, params: Record<string, number>) {
+    setActiveIndicators((prev) =>
+      prev.map((a) => {
+        if (a.id !== id) return a;
+        // Rebuild id to reflect new params
+        const newId = `${a.name}_${Object.values(params).join('_') || 'default'}`;
+        return { ...a, id: newId, params };
+      })
+    );
+  }
+
+  function handleRemoveIndicator(id: string) {
+    setActiveIndicators((prev) => prev.filter((a) => a.id !== id));
+  }
+
   function handleTickerSubmit(newTicker: string) {
     setTicker(newTicker);
+    // Clear indicator state on ticker change (D-04 extension)
+    setActiveIndicators([]);
+    setFibActive(false);
+    setEwActive(false);
+    setIndicatorPickerOpen(false);
   }
 
   return (
@@ -95,6 +145,18 @@ export function EquityModule() {
                 chartData={chartData}
                 earningsMarkers={earningsMarkers}
                 dividendMarkers={dividendMarkers}
+                onIndicatorsClick={() => setIndicatorPickerOpen((p) => !p)}
+                onFibClick={() => setFibActive((p) => !p)}
+                onEwClick={() => setEwActive((p) => !p)}
+                activeIndicatorCount={activeIndicators.length}
+                fibActive={fibActive}
+                ewActive={ewActive}
+                activeIndicators={activeIndicators}
+                onToggleIndicator={handleToggleIndicator}
+                onIndicatorParamChange={handleIndicatorParamChange}
+                onRemoveIndicator={handleRemoveIndicator}
+                indicatorPickerOpen={indicatorPickerOpen}
+                onCloseIndicatorPicker={() => setIndicatorPickerOpen(false)}
               />
             </div>
 

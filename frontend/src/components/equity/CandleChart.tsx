@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   createChart,
   CandlestickSeries,
+  LineSeries,
   createSeriesMarkers,
   type IChartApi,
   type ISeriesApi,
@@ -11,12 +12,25 @@ import {
 import { CHART_OPTIONS, CANDLE_STYLE } from '../../lib/chartConfig';
 import type { OHLCVBar, ChartMarker, TimeRange } from '../../types/equity';
 
+// OverlayConfig defined here (canonical location); re-exported for ExpandedChart
+export interface OverlayConfig {
+  id: string;
+  seriesType: 'line' | 'histogram' | 'band';
+  data:
+    | Array<{ time: string; value: number }>
+    | Record<string, Array<{ time: string; value: number }>>;
+  color: string;
+  lineWidth?: number;
+  title?: string;
+}
+
 interface CandleChartProps {
   data: OHLCVBar[];
   markers?: ChartMarker[];
   label: string;
   onExpand?: () => void;
   expanded?: boolean;
+  overlays?: OverlayConfig[];
 }
 
 const TIME_RANGES: TimeRange[] = ['1D', '1W', '1M', '1Y', '5Y'];
@@ -28,11 +42,12 @@ const RANGE_DAYS: Record<TimeRange, number> = {
   '5Y': 1825,
 };
 
-export function CandleChart({ data, markers = [], label, onExpand, expanded = false }: CandleChartProps) {
+export function CandleChart({ data, markers = [], label, onExpand, expanded = false, overlays = [] }: CandleChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const markersInstanceRef = useRef<ReturnType<typeof createSeriesMarkers> | null>(null);
+  const overlaySeriesRef = useRef<ISeriesApi<'Line'>[]>([]);
 
   // Create chart once on mount
   useEffect(() => {
@@ -59,6 +74,7 @@ export function CandleChart({ data, markers = [], label, onExpand, expanded = fa
 
     return () => {
       obs.disconnect();
+      overlaySeriesRef.current = [];
       chartRef.current?.remove();
       chartRef.current = null;
       seriesRef.current = null;
@@ -95,6 +111,34 @@ export function CandleChart({ data, markers = [], label, onExpand, expanded = fa
       );
     }
   }, [markers]);
+
+  // Overlay series — re-render when overlays prop changes
+  useEffect(() => {
+    if (!chartRef.current) return;
+
+    // Remove previous overlay series
+    overlaySeriesRef.current.forEach((s) => {
+      try { chartRef.current?.removeSeries(s); } catch { /* already removed */ }
+    });
+    overlaySeriesRef.current = [];
+
+    // Add new overlay series
+    overlays.forEach((overlay) => {
+      if (!chartRef.current) return;
+      if (overlay.seriesType === 'line') {
+        const series = chartRef.current.addSeries(LineSeries, {
+          color: overlay.color,
+          lineWidth: overlay.lineWidth ?? 1,
+          title: overlay.title ?? '',
+        }, 0);
+        const pts = Array.isArray(overlay.data) ? overlay.data : [];
+        if (pts.length > 0) {
+          series.setData(pts as Parameters<typeof series.setData>[0]);
+        }
+        overlaySeriesRef.current.push(series);
+      }
+    });
+  }, [overlays]);
 
   function setTimeRange(range: TimeRange) {
     if (!chartRef.current) return;

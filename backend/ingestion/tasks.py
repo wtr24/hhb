@@ -222,6 +222,65 @@ def ingest_treasury_curve(self):
             logger.error("ingest_treasury_curve exhausted retries", exc_info=exc)
 
 
+@app.task
+def compute_nightly_pivot_points():
+    """
+    Nightly Celery beat task — TA-07.
+    For each seed ticker, reads the most recent completed daily bar from TimescaleDB,
+    computes all 5 pivot point methods, and upserts into pivot_points table.
+    """
+    from analysis.pivot_points import compute_all_methods
+    from models.pivot_points import PivotPoints
+
+    for ticker in SEED_TICKERS:
+        try:
+            with SessionLocal() as session:
+                row = (
+                    session.query(OHLCV)
+                    .filter(OHLCV.ticker == ticker, OHLCV.interval == "1d")
+                    .order_by(OHLCV.time.desc())
+                    .first()
+                )
+                if row is None:
+                    logger.warning(f"pivot_points: no daily bar for {ticker}, skipping")
+                    continue
+
+                high = float(row.high)
+                low = float(row.low)
+                close = float(row.close)
+                open_ = float(row.open)
+                bar_time = row.time
+
+                methods = compute_all_methods(high, low, close, open_)
+
+                # Delete existing rows for this ticker/timeframe/date to allow upsert
+                session.query(PivotPoints).filter(
+                    PivotPoints.ticker == ticker,
+                    PivotPoints.timeframe == "1d",
+                    PivotPoints.time == bar_time,
+                ).delete(synchronize_session=False)
+
+                for m in methods:
+                    pivot_row = PivotPoints(
+                        time=bar_time,
+                        ticker=ticker,
+                        timeframe="1d",
+                        method=m["method"],
+                        pp=m["pp"],
+                        r1=m.get("r1"),
+                        r2=m.get("r2"),
+                        r3=m.get("r3"),
+                        s1=m.get("s1"),
+                        s2=m.get("s2"),
+                        s3=m.get("s3"),
+                    )
+                    session.add(pivot_row)
+                session.commit()
+            logger.info(f"pivot_points computed: {ticker} 5 methods")
+        except Exception as exc:
+            logger.error(f"pivot_points failed for {ticker}: {exc}", exc_info=True)
+
+
 def _upsert_result(session, result: dict) -> None:
     """Upsert OHLCV rows and fundamentals from a fetch result dict."""
     for row in result.get("ohlcv", []):

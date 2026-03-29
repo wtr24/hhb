@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from datetime import timedelta
 import os
 
@@ -33,6 +34,10 @@ app.conf.update(
         "ingest-treasury-every-15m": {
             "task": "ingestion.tasks.ingest_treasury_curve",
             "schedule": timedelta(minutes=15),
+        },
+        "compute-nightly-pivot-points": {
+            "task": "ingestion.tasks.compute_nightly_pivot_points",
+            "schedule": crontab(hour=20, minute=0),
         },
     },
 )

@@ -1,4 +1,4 @@
-"""TA-01 and TA-02 indicator tests — Wave 1 implementation."""
+"""TA-01 through TA-05 indicator tests — Wave 1 implementation."""
 import pytest
 import numpy as np
 
@@ -7,7 +7,11 @@ from analysis.indicators import (
     compute_golden_death_cross, compute_ema_ribbon,
     compute_rsi, compute_macd, compute_stoch_rsi,
     compute_williams_r, compute_kdj,
+    compute_adx, compute_aroon, compute_parabolic_sar, compute_supertrend, compute_ichimoku,
+    compute_bollinger_bands, compute_atr, compute_historical_vol, compute_ulcer_index,
+    compute_obv, compute_vwap, compute_volume_profile, compute_cmf, compute_mfi,
 )
+from analysis.garch import compute_garch_volatility
 
 # Synthetic OHLCV data used across all indicator tests (100 bars)
 @pytest.fixture
@@ -110,45 +114,123 @@ def test_momentum_kdj(ohlcv_100):
 
 
 # TA-03 Trend Strength
+
 def test_trend_strength_adx(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-03")
+    times = np.arange(100, dtype=float)
+    result = compute_adx(
+        ohlcv_100["high"], ohlcv_100["low"], ohlcv_100["close"], times, period=14
+    )
+    assert "adx" in result
+    assert "plus_di" in result
+    assert "minus_di" in result
+    assert len(result["adx"]) > 0
+    assert all(0.0 <= v <= 100.0 for v in result["adx"])
+
 
 def test_trend_strength_supertrend(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-03")
+    times = np.arange(100, dtype=float)
+    result = compute_supertrend(
+        ohlcv_100["high"], ohlcv_100["low"], ohlcv_100["close"], times
+    )
+    assert "values" in result
+    assert "direction" in result
+    assert len(result["values"]) > 0
+    assert all(d in {1, -1} for d in result["direction"])
+
 
 def test_trend_strength_ichimoku(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-03")
+    times = np.arange(100, dtype=float)
+    result = compute_ichimoku(
+        ohlcv_100["high"], ohlcv_100["low"], ohlcv_100["close"], times
+    )
+    assert "tenkan_sen" in result
+    assert "kijun_sen" in result
+    assert "senkou_a" in result
+    assert "senkou_b" in result
+    assert "chikou_span" in result
+
 
 def test_trend_strength_parabolic_sar(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-03")
+    times = np.arange(100, dtype=float)
+    result = compute_parabolic_sar(ohlcv_100["high"], ohlcv_100["low"], times)
+    assert "values" in result
+    assert len(result["values"]) > 0
 
 
 # TA-04 Volatility
+
 def test_volatility_bollinger_bands(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-04")
+    times = np.arange(100, dtype=float)
+    result = compute_bollinger_bands(ohlcv_100["close"], times, period=20)
+    assert "upper" in result
+    assert "middle" in result
+    assert "lower" in result
+    assert len(result["upper"]) > 0
+    assert all(u > m > l for u, m, l in zip(result["upper"], result["middle"], result["lower"]))
+
 
 def test_volatility_atr(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-04")
+    times = np.arange(100, dtype=float)
+    result = compute_atr(
+        ohlcv_100["high"], ohlcv_100["low"], ohlcv_100["close"], times, period=14
+    )
+    assert len(result["values"]) > 0
+    assert all(v >= 0 for v in result["values"])
+
 
 def test_volatility_garch(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-04")
+    np.random.seed(99)
+    closes_100 = 100 + np.cumsum(np.random.randn(100) * 0.5)
+    result = compute_garch_volatility(closes_100)
+    assert "vol_1d_forward" in result
+
+    closes_50 = 100 + np.cumsum(np.random.randn(50) * 0.5)
+    result_short = compute_garch_volatility(closes_50)
+    assert "error" in result_short
+
 
 def test_volatility_historical_vol(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-04")
+    times = np.arange(100, dtype=float)
+    result = compute_historical_vol(ohlcv_100["close"], times, period=20)
+    assert len(result["values"]) > 0
+    assert all(v > 0 for v in result["values"])
 
 
 # TA-05 Volume
+
 def test_volume_obv(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-05")
+    times = np.arange(100, dtype=float)
+    result = compute_obv(ohlcv_100["close"], ohlcv_100["volume"], times)
+    assert "values" in result
+    assert len(result["values"]) > 0
+
 
 def test_volume_vwap(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-05")
+    times = np.arange(100, dtype=float)
+    result = compute_vwap(
+        ohlcv_100["close"], ohlcv_100["high"], ohlcv_100["low"], ohlcv_100["volume"], times
+    )
+    assert "values" in result
+    assert len(result["values"]) > 0
+    assert all(v > 0 for v in result["values"])
+
 
 def test_volume_profile(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-05")
+    result = compute_volume_profile(ohlcv_100["close"], ohlcv_100["volume"])
+    assert "bins" in result
+    assert "volumes" in result
+    assert "poc" in result
+    assert isinstance(result["poc"], float)
+
 
 def test_volume_cmf(ohlcv_100):
-    pytest.skip("Wave 0 stub — TA-05")
+    times = np.arange(100, dtype=float)
+    result = compute_cmf(
+        ohlcv_100["high"], ohlcv_100["low"], ohlcv_100["close"], ohlcv_100["volume"], times
+    )
+    assert "values" in result
+    assert len(result["values"]) > 0
+    assert all(-1.0 <= v <= 1.0 for v in result["values"])
 
 
 # TA-06 Market Breadth

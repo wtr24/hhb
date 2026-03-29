@@ -552,3 +552,203 @@ def compute_ulcer_index(closes: np.ndarray, times: np.ndarray, period: int = 14)
         ui[i] = np.sqrt(np.mean(drawdowns))
     t, v = _strip_nan(times, ui)
     return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+# ──────────────────────────────────────────────────────────
+# TA-05  Volume
+# ──────────────────────────────────────────────────────────
+
+def compute_obv(closes: np.ndarray, volumes: np.ndarray, times: np.ndarray) -> dict:
+    """On-Balance Volume via talib.OBV."""
+    values = talib.OBV(closes, volumes)
+    t, v = _strip_nan(times, values.astype(float))
+    return {"times": t.tolist(), "values": np.round(v, 0).tolist()}
+
+
+def compute_vwap(closes: np.ndarray, highs: np.ndarray, lows: np.ndarray,
+                  volumes: np.ndarray, times: np.ndarray) -> dict:
+    """
+    Session VWAP (intraday cumulative from bar 0 of the array).
+    VWAP = cumulative(typical_price * volume) / cumulative(volume).
+    typical_price = (H + L + C) / 3.
+    No TA-Lib function for VWAP — hand-rolled from standard formula.
+    Note: for daily timeframes, each bar IS the session, so VWAP equals typical price.
+    """
+    typical = (highs + lows + closes) / 3
+    cum_tp_vol = np.cumsum(typical * volumes)
+    cum_vol = np.cumsum(volumes)
+    vwap = np.where(cum_vol != 0, cum_tp_vol / cum_vol, np.nan)
+    t, v = _strip_nan(times, vwap)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_anchored_vwap(closes: np.ndarray, highs: np.ndarray, lows: np.ndarray,
+                           volumes: np.ndarray, times: np.ndarray,
+                           anchor_idx: int = 0) -> dict:
+    """
+    Anchored VWAP from a specific bar index (anchor_idx).
+    Frontend provides anchor_idx when user selects an anchor bar.
+    """
+    if anchor_idx >= len(closes) or anchor_idx < 0:
+        return {"times": [], "values": [], "error": "anchor_idx out of range"}
+    typical = (highs[anchor_idx:] + lows[anchor_idx:] + closes[anchor_idx:]) / 3
+    vols = volumes[anchor_idx:]
+    cum_tp_vol = np.cumsum(typical * vols)
+    cum_vol = np.cumsum(vols)
+    vwap = np.where(cum_vol != 0, cum_tp_vol / cum_vol, np.nan)
+    t, v = _strip_nan(times[anchor_idx:], vwap)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_vwap_sd_bands(closes: np.ndarray, highs: np.ndarray, lows: np.ndarray,
+                           volumes: np.ndarray, times: np.ndarray,
+                           std_devs: list[float] | None = None) -> dict:
+    """
+    VWAP with Standard Deviation bands (±1σ, ±2σ).
+    SD is rolling population std dev of (typical_price - VWAP) weighted by volume.
+    """
+    if std_devs is None:
+        std_devs = [1.0, 2.0]
+    typical = (highs + lows + closes) / 3
+    cum_tp_vol = np.cumsum(typical * volumes)
+    cum_vol = np.cumsum(volumes)
+    vwap = np.where(cum_vol != 0, cum_tp_vol / cum_vol, np.nan)
+    variance = np.where(cum_vol != 0,
+                        np.cumsum((typical - vwap) ** 2 * volumes) / cum_vol,
+                        np.nan)
+    sd = np.sqrt(np.maximum(variance, 0))
+    result = {"times": times.tolist(), "vwap": np.round(vwap, 4).tolist()}
+    for s in std_devs:
+        result[f"upper_{s}"] = np.round(vwap + s * sd, 4).tolist()
+        result[f"lower_{s}"] = np.round(vwap - s * sd, 4).tolist()
+    return result
+
+
+def compute_ad_line(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                     volumes: np.ndarray, times: np.ndarray) -> dict:
+    """Accumulation/Distribution Line via talib.AD."""
+    values = talib.AD(highs, lows, closes, volumes)
+    t, v = _strip_nan(times, values)
+    return {"times": t.tolist(), "values": np.round(v, 2).tolist()}
+
+
+def compute_cmf(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                 volumes: np.ndarray, times: np.ndarray, period: int = 20) -> dict:
+    """Chaikin Money Flow via talib.ADOSC (ratio of A/D oscillator)."""
+    # CMF = sum(MFV * volume, N) / sum(volume, N)
+    # MFV = ((C - L) - (H - C)) / (H - L)  when H != L, else 0
+    hl = highs - lows
+    mfv = np.where(hl != 0, ((closes - lows) - (highs - closes)) / hl, 0.0) * volumes
+    cmf = np.full(len(closes), np.nan)
+    for i in range(period - 1, len(closes)):
+        vol_sum = np.sum(volumes[i - period + 1:i + 1])
+        cmf[i] = np.sum(mfv[i - period + 1:i + 1]) / vol_sum if vol_sum != 0 else 0.0
+    t, v = _strip_nan(times, cmf)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_mfi(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                 volumes: np.ndarray, times: np.ndarray, period: int = 14) -> dict:
+    """Money Flow Index via talib.MFI. Range 0–100."""
+    values = talib.MFI(highs, lows, closes, volumes, timeperiod=period)
+    t, v = _strip_nan(times, values)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_volume_profile(closes: np.ndarray, volumes: np.ndarray,
+                            n_bins: int = 24) -> dict:
+    """
+    Volume Profile: price level -> total volume traded at that level.
+    Returns histogram of volume-at-price. Not time-series — used as chart overlay.
+    n_bins controls price granularity (24 bins is standard terminal density).
+    """
+    price_min, price_max = np.min(closes), np.max(closes)
+    if price_min == price_max:
+        return {"bins": [], "volumes": [], "poc": None}
+    bin_edges = np.linspace(price_min, price_max, n_bins + 1)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    hist_vol = np.zeros(n_bins)
+    for i, c in enumerate(closes):
+        bin_idx = np.searchsorted(bin_edges[1:], c)
+        bin_idx = min(bin_idx, n_bins - 1)
+        hist_vol[bin_idx] += volumes[i]
+    poc_idx = int(np.argmax(hist_vol))
+    return {
+        "bins": np.round(bin_centers, 4).tolist(),
+        "volumes": hist_vol.tolist(),
+        "poc": round(float(bin_centers[poc_idx]), 4),
+    }
+
+
+def compute_cvd(closes: np.ndarray, volumes: np.ndarray, times: np.ndarray) -> dict:
+    """
+    Cumulative Volume Delta: up-bar volume minus down-bar volume, cumulated.
+    up-bar = close >= close[i-1]; down-bar = close < close[i-1].
+    """
+    delta = np.zeros(len(closes))
+    for i in range(1, len(closes)):
+        if closes[i] >= closes[i - 1]:
+            delta[i] = volumes[i]
+        else:
+            delta[i] = -volumes[i]
+    cvd = np.cumsum(delta)
+    t, v = _strip_nan(times, cvd)
+    return {"times": t.tolist(), "values": np.round(v, 0).tolist()}
+
+
+def compute_vroc(volumes: np.ndarray, times: np.ndarray, period: int = 14) -> dict:
+    """Volume Rate of Change via talib.ROC applied to volume array."""
+    values = talib.ROC(volumes, timeperiod=period)
+    t, v = _strip_nan(times, values)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_ease_of_movement(highs: np.ndarray, lows: np.ndarray, volumes: np.ndarray,
+                               times: np.ndarray, period: int = 14) -> dict:
+    """Ease of Movement (EOM): combines price change and volume."""
+    hl2 = (highs + lows) / 2
+    mid_move = np.diff(hl2, prepend=hl2[0])
+    box_ratio = np.where(highs != lows,
+                          volumes / 1e6 / (highs - lows),
+                          np.nan)
+    eom_raw = np.where(box_ratio != 0, mid_move / box_ratio, np.nan)
+    eom_sma = talib.SMA(eom_raw, timeperiod=period)
+    t, v = _strip_nan(times, eom_sma)
+    return {"times": t.tolist(), "values": np.round(v, 4).tolist()}
+
+
+def compute_nvi_pvi(closes: np.ndarray, volumes: np.ndarray, times: np.ndarray) -> dict:
+    """
+    Negative Volume Index (NVI) and Positive Volume Index (PVI).
+    NVI: only updates on days when volume decreases from previous bar.
+    PVI: only updates on days when volume increases from previous bar.
+    Both start at 1000.
+    """
+    nvi = np.full(len(closes), np.nan)
+    pvi = np.full(len(closes), np.nan)
+    nvi[0] = pvi[0] = 1000.0
+    for i in range(1, len(closes)):
+        pct_chg = (closes[i] - closes[i - 1]) / closes[i - 1] if closes[i - 1] != 0 else 0
+        if volumes[i] < volumes[i - 1]:
+            nvi[i] = nvi[i - 1] * (1 + pct_chg)
+            pvi[i] = pvi[i - 1]
+        else:
+            pvi[i] = pvi[i - 1] * (1 + pct_chg)
+            nvi[i] = nvi[i - 1]
+    return {
+        "times": times.tolist(),
+        "nvi": np.round(nvi, 4).tolist(),
+        "pvi": np.round(pvi, 4).tolist(),
+    }
+
+
+def compute_force_index(closes: np.ndarray, volumes: np.ndarray, times: np.ndarray,
+                         period: int = 13) -> dict:
+    """Force Index = EMA(period) of (Close - Close[prev]) * Volume."""
+    raw = np.full(len(closes), np.nan)
+    for i in range(1, len(closes)):
+        raw[i] = (closes[i] - closes[i - 1]) * volumes[i]
+    fi_ema = talib.EMA(np.nan_to_num(raw, nan=0.0), timeperiod=period)
+    fi_ema[np.isnan(raw)] = np.nan
+    t, v = _strip_nan(times, fi_ema)
+    return {"times": t.tolist(), "values": np.round(v, 2).tolist()}

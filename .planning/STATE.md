@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-last_updated: "2026-03-30T06:15:48.589Z"
+status: Executing Phase 05
+last_updated: "2026-03-30T15:39:23.582Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -18,7 +18,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Unified zero-cost research terminal — pull up any instrument instantly with live quotes, charts, indicators, macro context, news sentiment, and positioning data
-**Current focus:** Phase 04 — technical-analysis-engine
+**Current focus:** Phase 05 — macro-dashboard
 
 ## Current Status
 
@@ -113,6 +113,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 04]: ChartPatternOverlay uses proportional bar-index CSS positioning (not chart.timeScale().timeToCoordinate) — chart instance is inside CandleChart and not accessible from ExpandedChart
 - [Phase 04]: subscribeClick handler stores onChartClick in useRef to avoid recreating chart on each render when callback changes
 - [Phase 04]: EW markers use createSeriesMarkers v5 API; even waves (2,4) belowBar, odd and corrective (A,B,C) aboveBar
+- [Phase 05]: gilt_curve PK is (time, source) composite — allows future additional curve sources beyond BoE
+- [Phase 05]: SEED_TICKERS expanded with ^GSPC (SPX) and DX-Y.NYB (DXY) for MACRO-14 at-a-glance strip
 
 ## Performance Metrics
 
@@ -145,6 +147,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 04 P04-07 | 185 | 3 tasks | 5 files |
 | Phase 04 P04-08 | 606 | 4 tasks | 6 files |
 | Phase 04 P04-09 | 20 | 3 tasks | 3 files |
+| Phase 05 P05-00 | 144 | 3 tasks | 11 files |
 
 ## Notes
 
@@ -155,5 +158,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 04-09 (Frontend — Fibonacci Drawing, Elliott Wave Labels, Pattern Badges — TA-09 through TA-13)
-- **Timestamp**: 2026-03-30T05:49:44Z
+- **Stopped at**: Completed 05-00 (Foundation — DB Migration, Config Expansion, TTL Entries, Test Stubs)
+- **Timestamp**: 2026-03-30T15:38:15Z

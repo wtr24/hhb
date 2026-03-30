@@ -62,19 +62,19 @@
 
 ### Macro Dashboard (Module 2)
 
-- [ ] **MACRO-01**: Full US yield curve (1M–30Y) from US Treasury XML displayed as chart, updated every 15m
-- [ ] **MACRO-02**: Full UK gilt curve from Bank of England Statistical Database
+- [x] **MACRO-01**: Full US yield curve (1M–30Y) from US Treasury XML displayed as chart, updated every 15m
+- [x] **MACRO-02**: Full UK gilt curve from Bank of England Statistical Database
 - [ ] **MACRO-03**: 2s10s and 5s30s spread as time series charts with recession zone overlay
 - [ ] **MACRO-04**: Curve shape classifier — Normal / Flat / Inverted / Humped with historical context
 - [ ] **MACRO-05**: Historical curve overlay — today vs 1M ago vs 1Y ago on same chart
 - [ ] **MACRO-06**: Real yield curve (nominal minus TIPS breakevens) + breakeven inflation time series (FRED)
-- [ ] **MACRO-07**: US macro panels — CPI, Core CPI, PCE (FRED) + UK CPI (ONS API)
-- [ ] **MACRO-08**: Labour market — US NFP + unemployment (BLS) + UK employment (ONS)
-- [ ] **MACRO-09**: GDP — US (FRED) + UK (ONS) + EU (ECB)
-- [ ] **MACRO-10**: Policy rates — Fed Funds + BoE base rate + ECB rate as time series
-- [ ] **MACRO-11**: VIX term structure — spot VIX + VIX3M + VIX6M contango/backwardation indicator
+- [x] **MACRO-07**: US macro panels — CPI, Core CPI, PCE (FRED) + UK CPI (ONS API)
+- [x] **MACRO-08**: Labour market — US NFP + unemployment (BLS) + UK employment (ONS)
+- [x] **MACRO-09**: GDP — US (FRED) + UK (ONS) + EU (ECB)
+- [x] **MACRO-10**: Policy rates — Fed Funds + BoE base rate + ECB rate as time series
+- [x] **MACRO-11**: VIX term structure — spot VIX + VIX3M + VIX6M contango/backwardation indicator
 - [ ] **MACRO-12**: VIX percentile rank (1Y and 5Y) + market regime classifier (Low Vol / Normal / Elevated / Crisis)
-- [ ] **MACRO-13**: DIY Fear & Greed Index — composite of VIX percentile, put/call ratio, market breadth, junk bond spread, SPX momentum, safe haven demand
+- [x] **MACRO-13**: DIY Fear & Greed Index — composite of VIX percentile, put/call ratio, market breadth, junk bond spread, SPX momentum, safe haven demand
 - [ ] **MACRO-14**: DXY / SPX / FTSE 100 at-a-glance (15s refresh) + seasonality panel (monthly avg returns)
 
 ### Forex & Commodities (Module 3)

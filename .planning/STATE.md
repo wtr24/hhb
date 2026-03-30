@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 05
-last_updated: "2026-03-30T20:29:38.174Z"
+last_updated: "2026-03-30T20:30:19.756Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -127,6 +127,10 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 05]: MacroModule uses React.lazy + .catch() fallback so plans 05-06 to 05-09 can land independently without breaking shell
 - [Phase 05]: recharts@3.8.1 ships own TypeScript types — no @types/recharts package needed
 - [Phase 05]: buildSparklinePath duplicated in PolicyRatesPanel rather than shared — keeps components self-contained per plan spec
+- [Phase 05]: BACKWARDATION warning sign uses Unicode escape \u26a0 rather than emoji literal — CLAUDE.md no-emoji convention
+- [Phase 05]: VIX6M line gated behind historyDepthOk conditional render — eliminates recharts overhead when not applicable
+- [Phase 05]: findNegativeZones detects contiguous negative-value periods for recession zone shading in SpreadPanel
+- [Phase 05]: activeOverlays state lives in CurvesTab and flows down to both YieldCurveChart and CurveShapePanel
 
 ## Performance Metrics
 
@@ -166,6 +170,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 05 P05-04 | 197 | 3 tasks | 4 files |
 | Phase 05 P05-05 | 202 | 6 tasks | 8 files |
 | Phase 05 P05-07 | 91 | 3 tasks | 3 files |
+| Phase 05 P05-08 | 83 | 4 tasks | 4 files |
+| Phase 05 P05-06 | 124 | 5 tasks | 5 files |
 
 ## Notes
 

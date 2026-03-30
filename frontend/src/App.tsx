@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useKeyboard } from "./hooks/useKeyboard";
 import { MODULE_TABS, type ModuleTab } from "./lib/theme";
 import EquityModule from "./components/equity/EquityModule";
+import { MacroModule } from "./components/macro/MacroModule";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ModuleTab>("EQUITY");
@@ -41,7 +42,8 @@ export default function App() {
       {/* Main module content area — fixed viewport height (D-01: nothing scrolls) */}
       <main className="flex-1 overflow-hidden">
         {activeTab === "EQUITY" && <EquityModule />}
-        {activeTab !== "EQUITY" && (
+        {activeTab === 'MACRO' && <MacroModule />}
+        {activeTab !== "EQUITY" && activeTab !== "MACRO" && (
           <div className="p-2">
             <div className="text-terminal-green">[{activeTab}] MODULE READY</div>
             <p className="text-terminal-dim mt-2">Press 1-6 to switch modules.</p>

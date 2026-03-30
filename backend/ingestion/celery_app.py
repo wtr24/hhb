@@ -59,5 +59,25 @@ app.conf.update(
             "task": "ingestion.tasks.compute_breadth_snapshot",
             "schedule": crontab(hour=22, minute=0),
         },
+        "ingest-ons-daily": {
+            "task": "ingestion.tasks.ingest_ons_series",
+            "schedule": crontab(hour=6, minute=0),
+        },
+        "ingest-ecb-gdp-daily": {
+            "task": "ingestion.tasks.ingest_ecb_gdp",
+            "schedule": crontab(hour=6, minute=15),
+        },
+        "ingest-boe-rate-daily": {
+            "task": "ingestion.tasks.ingest_boe_policy_rate",
+            "schedule": crontab(hour=6, minute=30),
+        },
+        "ingest-bls-nfp-daily": {
+            "task": "ingestion.tasks.ingest_bls_nfp",
+            "schedule": crontab(hour=7, minute=0),
+        },
+        "ingest-ecb-dfr-daily": {
+            "task": "ingestion.tasks.ingest_ecb_dfr",
+            "schedule": crontab(hour=6, minute=45),
+        },
     },
 )

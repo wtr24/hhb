@@ -16,6 +16,10 @@ from .sources.treasury_source import fetch_treasury_yield_curve
 from .sources.boe_source import fetch_boe_gilt_curve
 from .sources.vix_source import fetch_vix_term_structure
 from .sources.cboe_source import fetch_cboe_pcr
+from .sources.ons_source import fetch_ons_series_all
+from .sources.bls_source import fetch_bls_nfp
+from .sources.ecb_source import fetch_ecb_gdp, fetch_ecb_dfr
+from .sources.boe_rate_source import fetch_boe_policy_rate
 from api.database import SessionLocal
 from api.redis_client import redis_client
 from cache.rate_limiter import check_rate_limit
@@ -517,6 +521,129 @@ def compute_breadth_snapshot():
         logger.info(f"compute_breadth_snapshot: {pct:.1f}% above 200 SMA ({len(above_200)} tickers)")
     except Exception as exc:
         logger.error(f"compute_breadth_snapshot failed: {exc}", exc_info=True)
+
+
+@app.task(name="ingestion.tasks.ingest_ons_series")
+def ingest_ons_series():
+    """Daily task — ingest ONS UK CPI, unemployment, GDP into macro_series."""
+    from models.macro_series import MacroSeries
+
+    try:
+        series_map = fetch_ons_series_all()
+        total = 0
+        with SessionLocal() as session:
+            for series_id, observations in series_map.items():
+                if not observations:
+                    continue
+                rows = [
+                    {"time": obs["date"], "series_id": series_id,
+                     "value": obs["value"], "source": "ons"}
+                    for obs in observations
+                ]
+                stmt = pg_insert(MacroSeries.__table__).values(rows)
+                stmt = stmt.on_conflict_do_nothing(index_elements=["time", "series_id"])
+                session.execute(stmt)
+                total += len(rows)
+            session.commit()
+        logger.info(f"ingest_ons_series: upserted {total} rows")
+    except Exception as exc:
+        logger.error(f"ingest_ons_series failed: {exc}", exc_info=True)
+
+
+@app.task(name="ingestion.tasks.ingest_bls_nfp")
+def ingest_bls_nfp():
+    """Daily task — ingest BLS Non-Farm Payrolls into macro_series."""
+    from models.macro_series import MacroSeries
+
+    try:
+        observations = fetch_bls_nfp()
+        if not observations:
+            return  # Graceful no-op if BLS_API_KEY not set
+        rows = [
+            {"time": obs["date"], "series_id": "BLS_NFP",
+             "value": obs["value"], "source": "bls"}
+            for obs in observations
+        ]
+        with SessionLocal() as session:
+            stmt = pg_insert(MacroSeries.__table__).values(rows)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["time", "series_id"])
+            session.execute(stmt)
+            session.commit()
+        logger.info(f"ingest_bls_nfp: upserted {len(rows)} rows")
+    except Exception as exc:
+        logger.error(f"ingest_bls_nfp failed: {exc}", exc_info=True)
+
+
+@app.task(name="ingestion.tasks.ingest_ecb_gdp")
+def ingest_ecb_gdp():
+    """Daily task — ingest ECB Eurozone GDP into macro_series."""
+    from models.macro_series import MacroSeries
+
+    try:
+        observations = fetch_ecb_gdp()
+        if not observations:
+            return
+        rows = [
+            {"time": obs["date"], "series_id": "ECB_GDP",
+             "value": obs["value"], "source": "ecb"}
+            for obs in observations
+        ]
+        with SessionLocal() as session:
+            stmt = pg_insert(MacroSeries.__table__).values(rows)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["time", "series_id"])
+            session.execute(stmt)
+            session.commit()
+        logger.info(f"ingest_ecb_gdp: upserted {len(rows)} rows")
+    except Exception as exc:
+        logger.error(f"ingest_ecb_gdp failed: {exc}", exc_info=True)
+
+
+@app.task(name="ingestion.tasks.ingest_boe_policy_rate")
+def ingest_boe_policy_rate():
+    """Daily task — ingest BoE Bank Rate into macro_series (series_id='BOE_RATE')."""
+    from models.macro_series import MacroSeries
+
+    try:
+        observations = fetch_boe_policy_rate()
+        if not observations:
+            return
+        rows = [
+            {"time": obs["date"], "series_id": "BOE_RATE",
+             "value": obs["value"], "source": "boe"}
+            for obs in observations
+        ]
+        with SessionLocal() as session:
+            stmt = pg_insert(MacroSeries.__table__).values(rows)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["time", "series_id"])
+            session.execute(stmt)
+            session.commit()
+        logger.info(f"ingest_boe_policy_rate: upserted {len(rows)} rows")
+    except Exception as exc:
+        logger.error(f"ingest_boe_policy_rate failed: {exc}", exc_info=True)
+
+
+@app.task(name="ingestion.tasks.ingest_ecb_dfr")
+def ingest_ecb_dfr():
+    """Daily task — ingest ECB Deposit Facility Rate into macro_series (MACRO-10)."""
+    from models.macro_series import MacroSeries
+
+    try:
+        observations = fetch_ecb_dfr()
+        if not observations:
+            return
+        rows = [
+            {"time": obs["date"], "series_id": "ECB_DFR",
+             "value": obs["value"], "source": "ecb"}
+            for obs in observations
+        ]
+        with SessionLocal() as session:
+            stmt = pg_insert(MacroSeries.__table__).values(rows)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["time", "series_id"])
+            session.execute(stmt)
+            session.commit()
+        logger.info(f"ingest_ecb_dfr: upserted {len(rows)} rows")
+    except Exception as exc:
+        logger.error(f"ingest_ecb_dfr failed: {exc}", exc_info=True)
 
 
 def _upsert_result(session, result: dict) -> None:

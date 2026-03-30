@@ -19,6 +19,8 @@ interface ChartPanelProps {
   activeIndicatorCount?: number;
   fibActive?: boolean;
   ewActive?: boolean;
+  fibTrigger?: number;
+  ewTrigger?: number;
   activeIndicators?: ActiveIndicator[];
   onToggleIndicator?: (def: IndicatorDefinition) => void;
   onIndicatorParamChange?: (id: string, params: Record<string, number>) => void;
@@ -40,6 +42,8 @@ export function ChartPanel({
   activeIndicatorCount = 0,
   fibActive = false,
   ewActive = false,
+  fibTrigger,
+  ewTrigger,
   activeIndicators = [],
   onToggleIndicator,
   onIndicatorParamChange,
@@ -153,6 +157,8 @@ export function ChartPanel({
             onRemoveIndicator={onRemoveIndicator ?? (() => {})}
             chartData={chartData[expandedPanel]}
             markers={allMarkers}
+            fibTrigger={fibTrigger}
+            ewTrigger={ewTrigger}
           />
         </div>
       </div>

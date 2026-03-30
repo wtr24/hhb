@@ -37,6 +37,8 @@ export function EquityModule() {
   const [activeIndicators, setActiveIndicators] = useState<ActiveIndicator[]>([]);
   const [fibActive, setFibActive] = useState(false);
   const [ewActive, setEwActive] = useState(false);
+  const [fibTrigger, setFibTrigger] = useState(0);
+  const [ewTrigger, setEwTrigger] = useState(0);
   const [indicatorPickerOpen, setIndicatorPickerOpen] = useState(false);
 
   const quote = useEquityWebSocket(ticker);
@@ -146,11 +148,13 @@ export function EquityModule() {
                 earningsMarkers={earningsMarkers}
                 dividendMarkers={dividendMarkers}
                 onIndicatorsClick={() => setIndicatorPickerOpen((p) => !p)}
-                onFibClick={() => setFibActive((p) => !p)}
-                onEwClick={() => setEwActive((p) => !p)}
+                onFibClick={() => { setFibActive((p) => !p); setFibTrigger((p) => p + 1); }}
+                onEwClick={() => { setEwActive((p) => !p); setEwTrigger((p) => p + 1); }}
                 activeIndicatorCount={activeIndicators.length}
                 fibActive={fibActive}
                 ewActive={ewActive}
+                fibTrigger={fibTrigger}
+                ewTrigger={ewTrigger}
                 activeIndicators={activeIndicators}
                 onToggleIndicator={handleToggleIndicator}
                 onIndicatorParamChange={handleIndicatorParamChange}

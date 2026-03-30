@@ -31,6 +31,8 @@ interface ExpandedChartProps {
   chartData: OHLCVBar[];
   markers: ChartMarker[];
   onDrawingActiveChange?: (fibActive: boolean, ewActive: boolean) => void;
+  fibTrigger?: number;
+  ewTrigger?: number;
 }
 
 // Sub-pane chart instance tracker
@@ -218,6 +220,8 @@ export function ExpandedChart({
   chartData,
   markers,
   onDrawingActiveChange,
+  fibTrigger,
+  ewTrigger,
 }: ExpandedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [totalHeight, setTotalHeight] = useState(600);
@@ -242,6 +246,23 @@ export function ExpandedChart({
   useEffect(() => {
     onDrawingActiveChange?.(drawingTools.fibActive, drawingTools.ewActive);
   }, [drawingTools.fibActive, drawingTools.ewActive, onDrawingActiveChange]);
+
+  // Fire drawing tool toggles when parent increments trigger counters
+  const prevFibTrigger = useRef(fibTrigger);
+  useEffect(() => {
+    if (fibTrigger !== prevFibTrigger.current) {
+      prevFibTrigger.current = fibTrigger;
+      drawingTools.toggleFib();
+    }
+  }, [fibTrigger, drawingTools]);
+
+  const prevEwTrigger = useRef(ewTrigger);
+  useEffect(() => {
+    if (ewTrigger !== prevEwTrigger.current) {
+      prevEwTrigger.current = ewTrigger;
+      drawingTools.toggleEW();
+    }
+  }, [ewTrigger, drawingTools]);
 
   // Refs to oscillator chart instances, keyed by indicator id
   const subPaneRefs = useRef<Map<string, HTMLDivElement>>(new Map());

@@ -3,6 +3,8 @@ export const TERMINAL = {
   AMBER: "#ff9900",
   GREEN: "#00d084",
   RED: "#ff4444",
+  ORANGE: '#ff6600',
+  BRIGHT_GREEN: '#00ff66',
   DIM: "#404040",
   BORDER: "#1a1a1a",
 } as const;

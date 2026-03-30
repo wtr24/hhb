@@ -108,13 +108,15 @@ Plans:
 **Plans**: 7 plans
 
 Plans:
-- [ ] 04-01: TA-Lib + pandas-ta integration — library setup, wrapper layer, Moving Averages (§A) + EMA Ribbon
-- [ ] 04-02: Momentum & oscillator indicators (§B) — RSI, StochRSI, MACD, Stochastic, Williams %R, CCI, etc.
-- [ ] 04-03: Trend strength (§C), Volatility (§D), Volume indicators (§E)
-- [ ] 04-04: Market breadth (§F), Pivot Points 5 methods (§G), Intermarket indicators (§H)
-- [ ] 04-05: Candlestick pattern detection (60+ via TA-Lib) + per-asset win rate + p-value statistical significance layer (§O)
+- [x] 04-01: TA-Lib + pandas-ta integration — library setup, wrapper layer, Moving Averages (§A) + EMA Ribbon
+- [x] 04-02: Momentum & oscillator indicators (§B) — RSI, StochRSI, MACD, Stochastic, Williams %R, CCI, etc.
+- [x] 04-03: Trend strength (§C), Volatility (§D), Volume indicators (§E)
+- [x] 04-04: Market breadth (§F), Pivot Points 5 methods (§G), Intermarket indicators (§H)
+- [x] 04-05: Candlestick pattern detection (60+ via TA-Lib) + per-asset win rate + p-value statistical significance layer (§O)
 - [x] 04-06: Chart pattern detection (H&S, Cup & Handle, Double Top/Bottom, Triangles, Flags) with confidence scores
-- [ ] 04-07: Fibonacci retracement/extension drawing tool + Elliott Wave manual labeller + Fibonacci validation; indicator picker frontend
+- [x] 04-07: Fibonacci retracement/extension drawing tool + Elliott Wave manual labeller + Fibonacci validation; indicator picker frontend
+- [x] 04-08: Frontend — Indicator Picker, Sub-Panes, Overlay Series (TA-01 through TA-08)
+- [x] 04-09: Frontend — Fibonacci Drawing, Elliott Wave Labels, Pattern Badges (TA-09 through TA-13)
 
 ---
 

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 04
-last_updated: "2026-03-29T20:50:37.241Z"
+last_updated: "2026-03-30T05:51:40.217Z"
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 18
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 # Project State
@@ -110,6 +110,9 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 04]: OverlayConfig defined in CandleChart (not ExpandedChart) to avoid circular import
 - [Phase 04]: Separate lightweight-charts instances per oscillator sub-pane for layout simplicity
 - [Phase 04]: VOL_PROFILE uses CSS div-based histogram overlay (not chart series) in ExpandedChart
+- [Phase 04]: ChartPatternOverlay uses proportional bar-index CSS positioning (not chart.timeScale().timeToCoordinate) — chart instance is inside CandleChart and not accessible from ExpandedChart
+- [Phase 04]: subscribeClick handler stores onChartClick in useRef to avoid recreating chart on each render when callback changes
+- [Phase 04]: EW markers use createSeriesMarkers v5 API; even waves (2,4) belowBar, odd and corrective (A,B,C) aboveBar
 
 ## Performance Metrics
 
@@ -141,6 +144,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 04 P04-06 | 90s | 2 tasks | 3 files |
 | Phase 04 P04-07 | 185 | 3 tasks | 5 files |
 | Phase 04 P04-08 | 606 | 4 tasks | 6 files |
+| Phase 04 P04-09 | 20 | 3 tasks | 3 files |
 
 ## Notes
 
@@ -151,5 +155,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 04-08 (Frontend — Indicator Picker, Sub-Panes, Overlay Series — TA-01 through TA-08)
-- **Timestamp**: 2026-03-29T22:04:00Z
+- **Stopped at**: Completed 04-09 (Frontend — Fibonacci Drawing, Elliott Wave Labels, Pattern Badges — TA-09 through TA-13)
+- **Timestamp**: 2026-03-30T05:49:44Z

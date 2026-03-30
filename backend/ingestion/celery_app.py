@@ -40,7 +40,7 @@ app.conf.update(
             "schedule": crontab(hour=20, minute=0),
         },
         "compute-nightly-candlestick-stats": {
-            "task": "ingestion.compute_nightly_candlestick_stats",
+            "task": "ingestion.tasks.compute_nightly_candlestick_stats",
             "schedule": crontab(hour=21, minute=0),
         },
     },

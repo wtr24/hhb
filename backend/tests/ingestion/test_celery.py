@@ -42,10 +42,10 @@ def test_beat_schedule_has_treasury():
     assert entry["schedule"] == timedelta(minutes=15)
 
 
-def test_beat_schedule_exactly_4_entries():
+def test_beat_schedule_exactly_6_entries():
     """beat_schedule has exactly 4 entries — no extra, no missing."""
     from ingestion.celery_app import app
-    assert len(app.conf.beat_schedule) == 4
+    assert len(app.conf.beat_schedule) == 6
 
 
 def test_all_task_names_are_valid():

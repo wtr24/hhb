@@ -283,7 +283,7 @@ def compute_nightly_pivot_points():
             logger.error(f"pivot_points failed for {ticker}: {exc}", exc_info=True)
 
 
-@app.task(name="ingestion.compute_nightly_candlestick_stats")
+@app.task(name="ingestion.tasks.compute_nightly_candlestick_stats")
 def compute_nightly_candlestick_stats():
     """
     Nightly Celery beat task — TA-09, TA-13.

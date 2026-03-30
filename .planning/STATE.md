@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 05
-last_updated: "2026-03-30T20:15:03.348Z"
+last_updated: "2026-03-30T20:20:51.909Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -122,6 +122,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 05]: ONS beta API only (api.beta.ons.gov.uk) — api.ons.gov.uk retired November 2024
 - [Phase 05]: BLS_API_KEY graceful degradation: returns [] with warning if env var unset, not an error
 - [Phase 05]: ecb_source.py has fetch_ecb_gdp() and fetch_ecb_dfr() — GDP uses MNA dataflow, DFR uses FM dataflow
+- [Phase 05]: Named macro routes placed before {series} wildcard to prevent FastAPI routing collision
+- [Phase 05]: Fear & Greed computation uses sync SessionLocal pattern (consistent with pivot_points/Celery tasks)
 
 ## Performance Metrics
 
@@ -158,6 +160,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 05 P05-01 | 113 | 3 tasks | 4 files |
 | Phase 05 P05-02 | 162 | 3 tasks | 6 files |
 | Phase 05 P05-03 | 201 | 3 tasks | 6 files |
+| Phase 05 P05-04 | 197 | 3 tasks | 4 files |
 
 ## Notes
 
@@ -168,5 +171,6 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 05-01 (BoE Gilt Curve Ingestion Worker)
+- **Stopped at**: Completed 05-04 (Fear & Greed Service + All Four Macro API Routes)
+- **Timestamp**: 2026-03-30T20:19:53Z
 - **Timestamp**: 2026-03-30T15:41:52Z

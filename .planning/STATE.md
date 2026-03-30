@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 05
-last_updated: "2026-03-30T20:20:51.909Z"
+last_updated: "2026-03-30T20:26:21.765Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -124,6 +124,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 05]: ecb_source.py has fetch_ecb_gdp() and fetch_ecb_dfr() — GDP uses MNA dataflow, DFR uses FM dataflow
 - [Phase 05]: Named macro routes placed before {series} wildcard to prevent FastAPI routing collision
 - [Phase 05]: Fear & Greed computation uses sync SessionLocal pattern (consistent with pivot_points/Celery tasks)
+- [Phase 05]: MacroModule uses React.lazy + .catch() fallback so plans 05-06 to 05-09 can land independently without breaking shell
+- [Phase 05]: recharts@3.8.1 ships own TypeScript types — no @types/recharts package needed
 
 ## Performance Metrics
 
@@ -161,6 +163,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 05 P05-02 | 162 | 3 tasks | 6 files |
 | Phase 05 P05-03 | 201 | 3 tasks | 6 files |
 | Phase 05 P05-04 | 197 | 3 tasks | 4 files |
+| Phase 05 P05-05 | 202 | 6 tasks | 8 files |
 
 ## Notes
 
@@ -171,6 +174,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 05-04 (Fear & Greed Service + All Four Macro API Routes)
-- **Timestamp**: 2026-03-30T20:19:53Z
-- **Timestamp**: 2026-03-30T15:41:52Z
+- **Stopped at**: Completed 05-05 (recharts Install + MacroModule Container + Sub-Tab Nav + App.tsx Wiring)
+- **Timestamp**: 2026-03-30T20:25:22Z

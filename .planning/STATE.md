@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 05
-last_updated: "2026-03-30T20:13:18.372Z"
+last_updated: "2026-03-30T20:14:31.012Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -117,6 +117,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 05]: SEED_TICKERS expanded with ^GSPC (SPX) and DX-Y.NYB (DXY) for MACRO-14 at-a-glance strip
 - [Phase 05]: BoE IADB requires User-Agent header (Mozilla/5.0) to avoid 403 — explicitly set in HEADERS constant in boe_source.py
 - [Phase 05]: ingest_boe_gilt_curve beat schedule at 18:00 UTC — BoE gilt market closes ~16:00 BST, 18:00 UTC covers DST transitions without DST-conditional logic
+- [Phase 05]: vix_source uses fast_info dict .get() with history fallback — fast_info key names differ between yfinance versions
+- [Phase 05]: CBOE PCR flexible column detection handles 'P/C Ratio' and future column renames without code change
 
 ## Performance Metrics
 
@@ -151,6 +153,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 04 P04-09 | 20 | 3 tasks | 3 files |
 | Phase 05 P05-00 | 144 | 3 tasks | 11 files |
 | Phase 05 P05-01 | 113 | 3 tasks | 4 files |
+| Phase 05 P05-02 | 162 | 3 tasks | 6 files |
 
 ## Notes
 

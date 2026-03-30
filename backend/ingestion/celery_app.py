@@ -43,5 +43,9 @@ app.conf.update(
             "task": "ingestion.tasks.compute_nightly_candlestick_stats",
             "schedule": crontab(hour=21, minute=0),
         },
+        "ingest-boe-gilt-curve-daily": {
+            "task": "ingestion.tasks.ingest_boe_gilt_curve",
+            "schedule": crontab(hour=18, minute=0),
+        },
     },
 )

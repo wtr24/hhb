@@ -13,6 +13,7 @@ from .sources.yfinance_source import fetch_ohlcv_and_fundamentals, fetch_ohlcv_b
 from .sources.fred_source import fetch_fred_series
 from .sources.frankfurter_source import fetch_fx_rates
 from .sources.treasury_source import fetch_treasury_yield_curve
+from .sources.boe_source import fetch_boe_gilt_curve
 from api.database import SessionLocal
 from api.redis_client import redis_client
 from cache.rate_limiter import check_rate_limit
@@ -350,6 +351,55 @@ def compute_nightly_candlestick_stats():
             )
         except Exception as exc:
             logger.error(f"pattern_stats failed for {ticker}: {exc}", exc_info=True)
+
+
+@app.task(name="ingestion.tasks.ingest_boe_gilt_curve", bind=True, max_retries=3)
+def ingest_boe_gilt_curve(self):
+    """Nightly task — ingest BoE IADB IUDMNZC nominal gilt curve into gilt_curve hypertable."""
+    from models.gilt_curve import GiltCurve
+
+    try:
+        if not check_rate_limit(redis_client, "boe"):
+            logger.warning("Rate limit exceeded for boe, retrying")
+            raise self.retry(countdown=RETRY_COUNTDOWNS[0])
+
+        curve_rows = fetch_boe_gilt_curve()
+        if not curve_rows:
+            logger.warning("ingest_boe_gilt_curve: no rows returned from BoE")
+            return
+
+        db_rows = []
+        for row in curve_rows:
+            db_row = {"time": row["date"], "source": "boe"}
+            for tenor_key in [
+                "tenor_6m", "tenor_1y", "tenor_2y", "tenor_3y", "tenor_5y",
+                "tenor_7y", "tenor_10y", "tenor_15y", "tenor_20y", "tenor_25y", "tenor_30y",
+            ]:
+                db_row[tenor_key] = row.get(tenor_key)
+            db_rows.append(db_row)
+
+        with SessionLocal() as session:
+            stmt = pg_insert(GiltCurve.__table__).values(db_rows)
+            # ALWAYS use index_elements (column names), NEVER constraint= (Pitfall rule)
+            stmt = stmt.on_conflict_do_nothing(index_elements=["time", "source"])
+            session.execute(stmt)
+            session.commit()
+
+        # Cache the latest curve for fast API reads
+        from cache.ttl import cache_set as _cache_set
+        if curve_rows:
+            latest = sorted(curve_rows, key=lambda r: r["date"])[-1]
+            _cache_set(redis_client, "gilt_curve:latest", {
+                "date": latest["date"].isoformat(),
+                **{k: v for k, v in latest.items() if k != "date"},
+            }, "gilt_curve")
+
+        logger.info(f"ingest_boe_gilt_curve: upserted {len(db_rows)} rows")
+    except Exception as exc:
+        attempt = self.request.retries
+        countdown = RETRY_COUNTDOWNS[min(attempt, len(RETRY_COUNTDOWNS) - 1)]
+        logger.error(f"ingest_boe_gilt_curve failed (attempt {attempt}): {exc}")
+        raise self.retry(exc=exc, countdown=countdown)
 
 
 def _upsert_result(session, result: dict) -> None:

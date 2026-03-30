@@ -14,6 +14,8 @@ from .sources.fred_source import fetch_fred_series
 from .sources.frankfurter_source import fetch_fx_rates
 from .sources.treasury_source import fetch_treasury_yield_curve
 from .sources.boe_source import fetch_boe_gilt_curve
+from .sources.vix_source import fetch_vix_term_structure
+from .sources.cboe_source import fetch_cboe_pcr
 from api.database import SessionLocal
 from api.redis_client import redis_client
 from cache.rate_limiter import check_rate_limit
@@ -400,6 +402,121 @@ def ingest_boe_gilt_curve(self):
         countdown = RETRY_COUNTDOWNS[min(attempt, len(RETRY_COUNTDOWNS) - 1)]
         logger.error(f"ingest_boe_gilt_curve failed (attempt {attempt}): {exc}")
         raise self.retry(exc=exc, countdown=countdown)
+
+
+@app.task(name="ingestion.tasks.ingest_vix_term_structure", bind=True, max_retries=3)
+def ingest_vix_term_structure(self):
+    """15-minute task — ingest VIX spot/3M/6M into vix_term_structure hypertable."""
+    from models.vix_term_structure import VixTermStructure
+
+    try:
+        # Get existing row count to compute history_depth_ok
+        with SessionLocal() as session:
+            row_count = session.query(VixTermStructure).count()
+
+        data = fetch_vix_term_structure(history_row_count=row_count)
+
+        db_row = {
+            "time": data["time"],
+            "spot_vix": data["spot_vix"],
+            "vix_3m": data["vix_3m"],
+            "vix_6m": data["vix_6m"],
+            "contango": data["contango"],
+            "regime": data["regime"],
+        }
+        with SessionLocal() as session:
+            stmt = pg_insert(VixTermStructure.__table__).values([db_row])
+            stmt = stmt.on_conflict_do_nothing(index_elements=["time"])
+            session.execute(stmt)
+            session.commit()
+
+        cache_set(redis_client, "vix_term_structure:latest", {
+            **db_row,
+            "time": db_row["time"].isoformat(),
+            "history_depth_ok": data["history_depth_ok"],
+        }, "vix_term_structure")
+        logger.info(f"ingest_vix_term_structure: spot={data['spot_vix']:.2f}, regime={data['regime']}")
+    except Exception as exc:
+        attempt = self.request.retries
+        countdown = RETRY_COUNTDOWNS[min(attempt, len(RETRY_COUNTDOWNS) - 1)]
+        logger.error(f"ingest_vix_term_structure failed (attempt {attempt}): {exc}")
+        raise self.retry(exc=exc, countdown=countdown)
+
+
+@app.task(name="ingestion.tasks.ingest_cboe_pcr", bind=True, max_retries=3)
+def ingest_cboe_pcr(self):
+    """Daily task — ingest CBOE equity put/call ratio into macro_series."""
+    from models.macro_series import MacroSeries
+
+    try:
+        data = fetch_cboe_pcr()
+        row = {
+            "time": data["date"],
+            "series_id": "CBOE_PCR",
+            "value": data["value"],
+            "source": "cboe",
+        }
+        with SessionLocal() as session:
+            stmt = pg_insert(MacroSeries.__table__).values([row])
+            stmt = stmt.on_conflict_do_nothing(index_elements=["time", "series_id"])
+            session.execute(stmt)
+            session.commit()
+        logger.info(f"ingest_cboe_pcr: PCR={data['value']:.3f} for {data['date'].date()}")
+    except Exception as exc:
+        attempt = self.request.retries
+        countdown = RETRY_COUNTDOWNS[min(attempt, len(RETRY_COUNTDOWNS) - 1)]
+        logger.error(f"ingest_cboe_pcr failed (attempt {attempt}): {exc}")
+        raise self.retry(exc=exc, countdown=countdown)
+
+
+@app.task(name="ingestion.tasks.compute_breadth_snapshot")
+def compute_breadth_snapshot():
+    """Nightly task — compute % of seed tickers above 200-day SMA, store in macro_series.
+
+    Phase 4 breadth.py is pure in-memory — this task persists a snapshot so Fear & Greed
+    composite can query it from the DB (series_id = 'BREADTH_PCT200').
+    """
+    import numpy as np
+    from models.macro_series import MacroSeries
+
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    try:
+        above_200 = []
+        with SessionLocal() as session:
+            for ticker in SEED_TICKERS:
+                rows = (
+                    session.query(OHLCV)
+                    .filter(OHLCV.ticker == ticker, OHLCV.interval == "1d")
+                    .order_by(OHLCV.time.asc())
+                    .all()
+                )
+                if len(rows) < 200:
+                    logger.warning(f"compute_breadth_snapshot: {ticker} has < 200 bars, skipping")
+                    continue
+                closes = np.array([float(r.close) for r in rows])
+                sma_200 = np.mean(closes[-200:])
+                above_200.append(1 if closes[-1] > sma_200 else 0)
+
+        if not above_200:
+            logger.warning("compute_breadth_snapshot: no tickers with sufficient history")
+            return
+
+        pct = (sum(above_200) / len(above_200)) * 100
+        row = {
+            "time": today,
+            "series_id": "BREADTH_PCT200",
+            "value": round(pct, 2),
+            "source": "computed",
+        }
+        with SessionLocal() as session:
+            stmt = pg_insert(MacroSeries.__table__).values([row])
+            stmt = stmt.on_conflict_do_nothing(index_elements=["time", "series_id"])
+            session.execute(stmt)
+            session.commit()
+        logger.info(f"compute_breadth_snapshot: {pct:.1f}% above 200 SMA ({len(above_200)} tickers)")
+    except Exception as exc:
+        logger.error(f"compute_breadth_snapshot failed: {exc}", exc_info=True)
 
 
 def _upsert_result(session, result: dict) -> None:

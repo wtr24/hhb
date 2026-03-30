@@ -47,5 +47,17 @@ app.conf.update(
             "task": "ingestion.tasks.ingest_boe_gilt_curve",
             "schedule": crontab(hour=18, minute=0),
         },
+        "ingest-vix-every-15m": {
+            "task": "ingestion.tasks.ingest_vix_term_structure",
+            "schedule": timedelta(minutes=15),
+        },
+        "ingest-cboe-pcr-daily": {
+            "task": "ingestion.tasks.ingest_cboe_pcr",
+            "schedule": crontab(hour=19, minute=0),
+        },
+        "compute-breadth-snapshot-daily": {
+            "task": "ingestion.tasks.compute_breadth_snapshot",
+            "schedule": crontab(hour=22, minute=0),
+        },
     },
 )

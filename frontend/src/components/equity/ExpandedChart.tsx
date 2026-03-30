@@ -6,22 +6,21 @@ import {
   type ISeriesApi,
 } from 'lightweight-charts';
 import { CandleChart } from './CandleChart';
+import type { OverlayConfig } from './CandleChart';
 import { CHART_OPTIONS } from '../../lib/chartConfig';
 import { TERMINAL } from '../../lib/theme';
-import { fetchIndicator } from '../../lib/ta-api';
+import {
+  fetchIndicator,
+  fetchCandlestickPatterns,
+  fetchChartPatterns,
+} from '../../lib/ta-api';
+import type { CandlestickPatternResult, ChartPatternResult } from '../../lib/ta-api';
 import type { OHLCVBar, ChartMarker } from '../../types/equity';
 import type { ActiveIndicator } from './IndicatorPicker';
+import { useDrawingTools } from './DrawingTools';
 
-export interface OverlayConfig {
-  id: string;
-  seriesType: 'line' | 'histogram' | 'band';
-  data:
-    | Array<{ time: string; value: number }>
-    | Record<string, Array<{ time: string; value: number }>>;
-  color: string;
-  lineWidth?: number;
-  title?: string;
-}
+// Re-export for external consumers (ChartPanel imports this)
+export type { OverlayConfig };
 
 interface ExpandedChartProps {
   ticker: string;
@@ -31,6 +30,7 @@ interface ExpandedChartProps {
   onRemoveIndicator: (id: string) => void;
   chartData: OHLCVBar[];
   markers: ChartMarker[];
+  onDrawingActiveChange?: (fibActive: boolean, ewActive: boolean) => void;
 }
 
 // Sub-pane chart instance tracker
@@ -151,6 +151,64 @@ function extractSeriesData(
   return [];
 }
 
+// Chart pattern shaded region overlay (TA-10)
+// Positions a semi-transparent div proportionally by bar index within the chart container.
+// The chart canvas has a right price scale (~50px) so we account for that.
+const PRICE_SCALE_WIDTH = 50;
+
+interface ChartPatternOverlayProps {
+  pattern: ChartPatternResult;
+  chartData: OHLCVBar[];
+  containerHeight: number;
+}
+
+function ChartPatternOverlay({ pattern, chartData, containerHeight }: ChartPatternOverlayProps) {
+  const n = chartData.length;
+  if (n < 2) return null;
+  const availableWidth = `calc(100% - ${PRICE_SCALE_WIDTH}px)`;
+  const startPct = (pattern.start_bar / n) * 100;
+  const endPct = (pattern.end_bar / n) * 100;
+  const widthPct = endPct - startPct;
+  if (widthPct <= 0) return null;
+
+  // Breakout bar label position
+  const breakoutPct = (pattern.breakout_bar / n) * 100;
+
+  return (
+    <>
+      {/* Shaded region */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: `calc(${availableWidth} * ${startPct / 100})`,
+          width: `calc(${availableWidth} * ${widthPct / 100})`,
+          height: containerHeight,
+          background: 'rgba(255, 153, 0, 0.08)',
+          zIndex: 3,
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Breakout label */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 4,
+          left: `calc(${availableWidth} * ${breakoutPct / 100})`,
+          color: TERMINAL.AMBER,
+          fontSize: 10,
+          zIndex: 4,
+          pointerEvents: 'none',
+          whiteSpace: 'nowrap',
+          transform: 'translateX(-50%)',
+        }}
+      >
+        {pattern.label} [exp]
+      </div>
+    </>
+  );
+}
+
 export function ExpandedChart({
   ticker,
   timeframe,
@@ -159,6 +217,7 @@ export function ExpandedChart({
   onRemoveIndicator,
   chartData,
   markers,
+  onDrawingActiveChange,
 }: ExpandedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [totalHeight, setTotalHeight] = useState(600);
@@ -170,6 +229,20 @@ export function ExpandedChart({
   // Overlay configs to pass to CandleChart
   const [overlays, setOverlays] = useState<OverlayConfig[]>([]);
 
+  // Candlestick pattern badges (TA-09, TA-13)
+  const [candlePatterns, setCandlePatterns] = useState<CandlestickPatternResult[]>([]);
+
+  // Chart pattern shaded regions (TA-10)
+  const [chartPatterns, setChartPatterns] = useState<ChartPatternResult[]>([]);
+
+  // Drawing tools state machine
+  const drawingTools = useDrawingTools(useCallback(() => {}, []));
+
+  // Notify parent of drawing active state changes
+  useEffect(() => {
+    onDrawingActiveChange?.(drawingTools.fibActive, drawingTools.ewActive);
+  }, [drawingTools.fibActive, drawingTools.ewActive, onDrawingActiveChange]);
+
   // Refs to oscillator chart instances, keyed by indicator id
   const subPaneRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const subPaneCharts = useRef<Map<string, SubPaneInstance>>(new Map());
@@ -177,6 +250,51 @@ export function ExpandedChart({
   // Inline param editor state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editParams, setEditParams] = useState<Record<string, number>>({});
+
+  // Fetch candlestick patterns on ticker/timeframe change (TA-09, TA-13)
+  useEffect(() => {
+    let cancelled = false;
+    if (!ticker) return;
+    fetchCandlestickPatterns(ticker, timeframe)
+      .then((res) => {
+        if (!cancelled) setCandlePatterns(res.patterns);
+      })
+      .catch(() => {
+        if (!cancelled) setCandlePatterns([]);
+      });
+    return () => { cancelled = true; };
+  }, [ticker, timeframe]);
+
+  // Fetch chart patterns on ticker/timeframe change (TA-10)
+  useEffect(() => {
+    let cancelled = false;
+    if (!ticker) return;
+    fetchChartPatterns(ticker, timeframe)
+      .then((res) => {
+        if (!cancelled) setChartPatterns(res.patterns);
+      })
+      .catch(() => {
+        if (!cancelled) setChartPatterns([]);
+      });
+    return () => { cancelled = true; };
+  }, [ticker, timeframe]);
+
+  // Clear drawings when ticker or timeframe changes
+  useEffect(() => {
+    drawingTools.clearAllDrawings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticker, timeframe]);
+
+  // Escape key cancels active drawing mode
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && (drawingTools.fibActive || drawingTools.ewActive)) {
+        drawingTools.cancelDrawing();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [drawingTools]);
 
   // Measure container height
   useEffect(() => {
@@ -430,8 +548,93 @@ export function ExpandedChart({
           label=""
           expanded={true}
           overlays={overlays}
+          onChartClick={drawingTools.handleChartClick}
+          fibDrawings={drawingTools.fibDrawings}
+          ewLabels={drawingTools.ewLabels}
         />
         {volProfileInd && renderVolumeProfile(volProfileInd)}
+
+        {/* Candlestick pattern badges (TA-09, TA-13) — top-right stack */}
+        {candlePatterns.length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 28,
+              right: 4,
+              zIndex: 20,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              pointerEvents: 'none',
+            }}
+          >
+            {candlePatterns.map((p) => (
+              <div
+                key={p.name}
+                style={{
+                  background: TERMINAL.BG,
+                  color: p.win_rate !== null ? TERMINAL.AMBER : TERMINAL.DIM,
+                  fontSize: 10,
+                  padding: '2px 4px',
+                  border: `1px solid ${TERMINAL.BORDER}`,
+                  borderLeft: p.is_bullish
+                    ? `2px solid ${TERMINAL.GREEN}`
+                    : `2px solid ${TERMINAL.RED}`,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {p.name}: {p.win_rate !== null
+                  ? `${(p.win_rate * 100).toFixed(0)}% win`
+                  : 'no data'} | n={p.n_occurrences}
+                {p.p_value !== null ? ` | p=${p.p_value.toFixed(2)}` : ''}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Chart pattern shaded regions (TA-10) */}
+        {chartPatterns.map((cp) => (
+          <ChartPatternOverlay
+            key={`${cp.pattern}-${cp.start_bar}`}
+            pattern={cp}
+            chartData={chartData}
+            containerHeight={mainPx}
+          />
+        ))}
+
+        {/* EW validation badges — bottom-right when >= 4 labels placed */}
+        {drawingTools.ewLabels.length >= 4 && drawingTools.ewValidations.length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 4,
+              right: 4,
+              zIndex: 20,
+              background: TERMINAL.BG,
+              border: `1px solid ${TERMINAL.BORDER}`,
+              padding: '4px 6px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              pointerEvents: 'none',
+            }}
+          >
+            {drawingTools.ewValidations.map((v, i) => (
+              <div
+                key={i}
+                style={{
+                  fontSize: 10,
+                  color: v.valid ? TERMINAL.GREEN : TERMINAL.RED,
+                  display: 'flex',
+                  gap: 4,
+                }}
+              >
+                <span>{v.valid ? '[✓]' : '[✗]'}</span>
+                <span>{v.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Oscillator sub-panes */}

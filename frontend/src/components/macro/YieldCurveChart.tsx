@@ -84,7 +84,7 @@ export function YieldCurveChart({ data, activeOverlays, loading }: YieldCurveCha
             fontSize: '11px',
             color: TERMINAL.AMBER,
           }}
-          formatter={(value: number | undefined) => [`${value?.toFixed(2) ?? ''}%`]}
+          formatter={(value: unknown) => [`${(value as number | undefined)?.toFixed(2) ?? ""}%`]}
         />
 
         {/* Primary US line (amber) */}

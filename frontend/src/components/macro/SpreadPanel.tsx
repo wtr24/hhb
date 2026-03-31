@@ -84,7 +84,7 @@ function SpreadChart({
               fontSize: '10px',
               color: TERMINAL.AMBER,
             }}
-            formatter={(value: number | undefined) => [`${value?.toFixed(2) ?? ''}%`]}
+            formatter={(value: unknown) => [`${(value as number | undefined)?.toFixed(2) ?? ""}%`]}
           />
           <ReferenceLine y={0} stroke={TERMINAL.DIM} strokeDasharray="2 2" />
           {negZones.map((zone, i) => (

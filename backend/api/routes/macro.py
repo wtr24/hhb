@@ -289,37 +289,37 @@ async def get_macro_indicators(db: AsyncSession = Depends(get_async_db)):
 
     response = {
         "cpi": {
-            "us": cpi_hist_us[-1] if cpi_hist_us else None,
-            "uk": cpi_hist_uk[-1] if cpi_hist_uk else None,
+            "current_us": cpi_hist_us[-1] if cpi_hist_us else None,
+            "current_uk": cpi_hist_uk[-1] if cpi_hist_uk else None,
             "history_us": cpi_hist_us,
             "history_uk": cpi_hist_uk,
             "mom": _mom(cpi_hist_us),
             "yoy": _yoy(cpi_hist_us),
         },
         "core_cpi": {
-            "us": core_hist_us[-1] if core_hist_us else None,
+            "current_us": core_hist_us[-1] if core_hist_us else None,
             "history_us": core_hist_us,
             "mom": _mom(core_hist_us),
             "yoy": _yoy(core_hist_us),
         },
         "pce": {
-            "us": pce_hist_us[-1] if pce_hist_us else None,
+            "current_us": pce_hist_us[-1] if pce_hist_us else None,
             "history_us": pce_hist_us,
             "mom": _mom(pce_hist_us),
             "yoy": _yoy(pce_hist_us),
         },
         "gdp": {
-            "us": gdp_hist_us[-1] if gdp_hist_us else None,
-            "uk": gdp_hist_uk[-1] if gdp_hist_uk else None,
-            "eu": gdp_hist_eu[-1] if gdp_hist_eu else None,
+            "current_us": gdp_hist_us[-1] if gdp_hist_us else None,
+            "current_uk": gdp_hist_uk[-1] if gdp_hist_uk else None,
+            "current_eu": gdp_hist_eu[-1] if gdp_hist_eu else None,
             "history_us": gdp_hist_us,
             "history_uk": gdp_hist_uk,
             "history_eu": gdp_hist_eu,
             "qoq": _mom(gdp_hist_us),
         },
         "unemployment": {
-            "us": unemp_hist_us[-1] if unemp_hist_us else None,
-            "uk": unemp_hist_uk[-1] if unemp_hist_uk else None,
+            "current_us": unemp_hist_us[-1] if unemp_hist_us else None,
+            "current_uk": unemp_hist_uk[-1] if unemp_hist_uk else None,
             "history_us": unemp_hist_us,
             "history_uk": unemp_hist_uk,
             "mom": _mom(unemp_hist_us),
@@ -334,6 +334,7 @@ async def get_macro_indicators(db: AsyncSession = Depends(get_async_db)):
         },
         "stale": not any([us_cpi, uk_cpi, us_gdp]),
     }
+    redis_client.delete("macro_indicators:latest")
     cache_set(redis_client, "macro_indicators:latest", response, "macro_indicators")
     return response
 

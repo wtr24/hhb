@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 05
-last_updated: "2026-03-30T20:30:19.756Z"
+last_updated: "2026-03-31T05:49:49.634Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -131,6 +131,8 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 - [Phase 05]: VIX6M line gated behind historyDepthOk conditional render — eliminates recharts overhead when not applicable
 - [Phase 05]: findNegativeZones detects contiguous negative-value periods for recession zone shading in SpreadPanel
 - [Phase 05]: activeOverlays state lives in CurvesTab and flows down to both YieldCurveChart and CurveShapePanel
+- [Phase 05]: Celery task registration tests require explicit import of ingestion.tasks before querying app.tasks — @app.task decorators not fired until module imported
+- [Phase 05]: macro router in main.py already registered from 05-04 — Task 5-10-2 required no file changes
 
 ## Performance Metrics
 
@@ -172,6 +174,7 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 | Phase 05 P05-07 | 91 | 3 tasks | 3 files |
 | Phase 05 P05-08 | 83 | 4 tasks | 4 files |
 | Phase 05 P05-06 | 124 | 5 tasks | 5 files |
+| Phase 05 P05-10 | 480 | 4 tasks | 2 files |
 
 ## Notes
 
@@ -182,5 +185,5 @@ Phase 2: [██████████] 100% — 12/12 plans complete
 
 ## Last Session
 
-- **Stopped at**: Completed 05-05 (recharts Install + MacroModule Container + Sub-Tab Nav + App.tsx Wiring)
-- **Timestamp**: 2026-03-30T20:25:22Z
+- **Stopped at**: Completed 05-10 (Integration Wiring — Barrel Exports, Router Registration, Integration Tests)
+- **Timestamp**: 2026-03-30T20:43:00Z

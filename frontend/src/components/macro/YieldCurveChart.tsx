@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   LineChart,
   Line,
@@ -85,7 +84,7 @@ export function YieldCurveChart({ data, activeOverlays, loading }: YieldCurveCha
             fontSize: '11px',
             color: TERMINAL.AMBER,
           }}
-          formatter={(value: number) => [`${value?.toFixed(2)}%`]}
+          formatter={(value: number | undefined) => [`${value?.toFixed(2) ?? ''}%`]}
         />
 
         {/* Primary US line (amber) */}

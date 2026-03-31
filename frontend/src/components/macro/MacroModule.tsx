@@ -55,37 +55,36 @@ export function MacroModule() {
       }}
     >
       {/* Module header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '4px 8px',
-          borderBottom: `1px solid ${TERMINAL.BORDER}`,
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'inherit',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            color: TERMINAL.AMBER,
-            letterSpacing: '0.1em',
-          }}
-        >
-          MACRO
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 12px',
+        height: 32,
+        borderBottom: `1px solid ${TERMINAL.BORDER}`,
+        backgroundColor: TERMINAL.PANEL,
+        flexShrink: 0,
+      }}>
+        <span style={{
+          fontSize: 9,
+          fontWeight: 600,
+          color: TERMINAL.CYAN,
+          letterSpacing: '0.18em',
+        }}>
+          MACRO OVERVIEW
         </span>
         {macroData.error && (
-          <span
-            style={{
-              fontFamily: 'inherit',
-              fontSize: '11px',
-              color: TERMINAL.RED,
-              letterSpacing: '0.05em',
-            }}
-          >
+          <span style={{
+            fontSize: 9,
+            color: TERMINAL.RED,
+            letterSpacing: '0.08em',
+          }}>
             {macroData.error}
+          </span>
+        )}
+        {macroData.loading && (
+          <span style={{ fontSize: 9, color: TERMINAL.MUTED, letterSpacing: '0.1em' }}>
+            LOADING...
           </span>
         )}
       </div>

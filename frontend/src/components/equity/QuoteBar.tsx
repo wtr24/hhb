@@ -1,18 +1,6 @@
-/**
- * QuoteBar — live quote strip (D-01 top strip, EQUITY-01, D-02, D-12).
- *
- * Full-width single row displaying:
- *   AAPL  189.50  +0.65%  O:187.20 H:190.10 L:186.80  Vol:42.8M  [STALE] [GBP]
- *
- * - Ticker name: amber bold
- * - Price + change %: green if positive, red if negative
- * - O/H/L: dim
- * - Volume: K/M/B formatted
- * - Stale badge (D-02): amber STALE border badge when quote.stale === true
- * - GBP mode (D-12): multiplies all price fields by gbpRate when gbpMode active
- */
 import type { Quote } from '../../types/equity';
 import { GBPToggle } from './GBPToggle';
+import { TERMINAL } from '../../lib/theme';
 
 interface QuoteBarProps {
   quote: Quote | null;
@@ -40,9 +28,17 @@ function fmtPrice(price: number | null): string {
   return price.toFixed(2);
 }
 
-export function QuoteBar({ quote, gbpMode, gbpRate, onGbpToggle }: QuoteBarProps) {
-  const currency = gbpMode && gbpRate !== null ? 'GBP' : 'USD';
+const SEP = (
+  <span style={{ color: TERMINAL.BORDER_BRIGHT, margin: '0 4px' }}>│</span>
+);
 
+const Label = ({ children }: { children: React.ReactNode }) => (
+  <span style={{ fontSize: 9, color: TERMINAL.MUTED, letterSpacing: '0.1em', marginRight: 3 }}>
+    {children}
+  </span>
+);
+
+export function QuoteBar({ quote, gbpMode, gbpRate, onGbpToggle }: QuoteBarProps) {
   const price = convertPrice(quote?.price ?? null, gbpMode, gbpRate);
   const open = convertPrice(quote?.open ?? null, gbpMode, gbpRate);
   const high = convertPrice(quote?.high ?? null, gbpMode, gbpRate);
@@ -52,71 +48,110 @@ export function QuoteBar({ quote, gbpMode, gbpRate, onGbpToggle }: QuoteBarProps
   const isPositive = changePct !== null && changePct >= 0;
   const isNegative = changePct !== null && changePct < 0;
 
-  const priceColor = isPositive
-    ? 'text-terminal-green'
-    : isNegative
-    ? 'text-terminal-red'
-    : 'text-terminal-amber';
+  const changeColor = isPositive ? TERMINAL.GREEN : isNegative ? TERMINAL.RED : TERMINAL.MUTED;
+  const priceColor = isPositive ? TERMINAL.GREEN : isNegative ? TERMINAL.RED : TERMINAL.AMBER;
 
   const changeStr = changePct !== null
     ? `${isPositive ? '+' : ''}${changePct.toFixed(2)}%`
     : '--';
 
   return (
-    <div className="flex items-center gap-3 border-b border-terminal-border py-0.5 px-2 bg-terminal-bg text-xs font-terminal overflow-x-auto shrink-0">
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0 12px',
+      height: 36,
+      borderBottom: `1px solid ${TERMINAL.BORDER}`,
+      backgroundColor: TERMINAL.ELEVATED,
+      flexShrink: 0,
+      gap: 2,
+      overflow: 'hidden',
+    }}>
       {/* Ticker */}
-      <span className="text-terminal-amber font-bold tracking-wider min-w-fit">
-        {quote?.ticker ?? '--'}
+      <span style={{
+        fontSize: 12,
+        fontWeight: 700,
+        letterSpacing: '0.12em',
+        color: TERMINAL.AMBER,
+        minWidth: 60,
+        textShadow: `0 0 12px rgba(240,165,0,0.3)`,
+      }}>
+        {quote?.ticker ?? '------'}
       </span>
 
-      {/* Currency label */}
-      {gbpMode && gbpRate !== null && (
-        <span className="text-terminal-dim min-w-fit">{currency}</span>
-      )}
+      {SEP}
 
-      {/* Price */}
-      <span className={`font-bold min-w-fit ${priceColor}`}>
+      {/* Price — large and prominent */}
+      <span style={{
+        fontSize: 15,
+        fontWeight: 700,
+        color: priceColor,
+        letterSpacing: '0.04em',
+        minWidth: 70,
+        textShadow: `0 0 10px ${priceColor}44`,
+      }}>
         {fmtPrice(price)}
       </span>
 
       {/* Change % */}
-      <span className={`min-w-fit ${priceColor}`}>
+      <span style={{
+        fontSize: 11,
+        fontWeight: 600,
+        color: changeColor,
+        minWidth: 60,
+        padding: '1px 6px',
+        backgroundColor: `${changeColor}14`,
+        borderRadius: 2,
+        letterSpacing: '0.04em',
+      }}>
         {changeStr}
       </span>
 
-      {/* Separator */}
-      <span className="text-terminal-border">|</span>
-
-      {/* OHLV */}
-      <span className="text-terminal-dim min-w-fit">
-        O:<span className="text-terminal-amber">{fmtPrice(open)}</span>
-      </span>
-      <span className="text-terminal-dim min-w-fit">
-        H:<span className="text-terminal-green">{fmtPrice(high)}</span>
-      </span>
-      <span className="text-terminal-dim min-w-fit">
-        L:<span className="text-terminal-red">{fmtPrice(low)}</span>
-      </span>
-
-      {/* Separator */}
-      <span className="text-terminal-border">|</span>
-
-      {/* Volume */}
-      <span className="text-terminal-dim min-w-fit">
-        Vol:<span className="text-terminal-amber">{formatVolume(quote?.volume ?? null)}</span>
-      </span>
-
-      {/* Stale badge (D-02) */}
-      {quote?.stale && (
-        <span className="text-terminal-amber text-xs border border-terminal-amber px-1 min-w-fit">
-          STALE
-        </span>
+      {gbpMode && gbpRate !== null && (
+        <span style={{ fontSize: 9, color: TERMINAL.MUTED, letterSpacing: '0.1em' }}>GBP</span>
       )}
 
-      {/* Spacer */}
-      <div className="flex-1" />
+      {SEP}
 
-      {/* GBP toggle (D-12) */}
+      {/* OHLV */}
+      <span style={{ whiteSpace: 'nowrap' }}>
+        <Label>O</Label>
+        <span style={{ color: TERMINAL.TEXT, fontSize: 11 }}>{fmtPrice(open)}</span>
+      </span>
+      <span style={{ whiteSpace: 'nowrap', marginLeft: 8 }}>
+        <Label>H</Label>
+        <span style={{ color: TERMINAL.GREEN, fontSize: 11 }}>{fmtPrice(high)}</span>
+      </span>
+      <span style={{ whiteSpace: 'nowrap', marginLeft: 8 }}>
+        <Label>L</Label>
+        <span style={{ color: TERMINAL.RED, fontSize: 11 }}>{fmtPrice(low)}</span>
+      </span>
+
+      {SEP}
+
+      <span style={{ whiteSpace: 'nowrap' }}>
+        <Label>VOL</Label>
+        <span style={{ color: TERMINAL.TEXT, fontSize: 11 }}>{formatVolume(quote?.volume ?? null)}</span>
+      </span>
+
+      {/* Stale badge */}
+      {quote?.stale && (
+        <>
+          {SEP}
+          <span style={{
+            fontSize: 9,
+            color: TERMINAL.AMBER,
+            border: `1px solid ${TERMINAL.AMBER}60`,
+            padding: '1px 5px',
+            borderRadius: 2,
+            letterSpacing: '0.1em',
+          }}>
+            STALE
+          </span>
+        </>
+      )}
+
+      <div style={{ flex: 1 }} />
       <GBPToggle active={gbpMode} onToggle={onGbpToggle} />
     </div>
   );

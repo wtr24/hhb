@@ -1,33 +1,108 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 @theme {
-  --color-terminal-bg: #0a0a0a;
-  --color-terminal-amber: #ff9900;
-  --color-terminal-green: #00d084;
-  --color-terminal-red: #ff4444;
-  --color-terminal-orange: #ff6600;
-  --color-terminal-bright-green: #00ff66;
-  --color-terminal-dim: #404040;
-  --color-terminal-border: #1a1a1a;
-  --font-family-terminal: "Courier New", "Lucida Console", monospace;
+  /* Base surfaces */
+  --color-terminal-bg: #0b0e14;
+  --color-terminal-panel: #0f1520;
+  --color-terminal-elevated: #141d2e;
+
+  /* Accents */
+  --color-terminal-cyan: #00c2e0;
+  --color-terminal-amber: #f0a500;
+  --color-terminal-amber-dim: #a06c00;
+
+  /* Data colors */
+  --color-terminal-green: #00d986;
+  --color-terminal-red: #f04060;
+  --color-terminal-orange: #f07020;
+  --color-terminal-bright-green: #00ff88;
+  --color-terminal-blue: #3d8bff;
+
+  /* Text */
+  --color-terminal-text: #c8d4e8;
+  --color-terminal-dim: #3a4a60;
+  --color-terminal-muted: #566880;
+
+  /* Structural */
+  --color-terminal-border: #1a2535;
+  --color-terminal-border-bright: #2a3f5a;
+  --color-terminal-border-active: #00c2e0;
+
+  /* Font */
+  --font-family-terminal: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   background-color: var(--color-terminal-bg);
-  color: var(--color-terminal-amber);
+  color: var(--color-terminal-text);
   font-family: var(--font-family-terminal);
-  font-size: 12px;
+  font-size: 11px;
   margin: 0;
   padding: 0;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
 }
 
-/* Scrollbar styling for terminal aesthetic */
-::-webkit-scrollbar {
-  width: 6px;
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--color-terminal-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-terminal-border-bright); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-terminal-muted); }
+
+/* Panel chrome shared utility */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--color-terminal-border);
+  background: var(--color-terminal-panel);
+  flex-shrink: 0;
 }
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
+
+.panel-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-terminal-cyan);
 }
-::-webkit-scrollbar-thumb {
-  background: #333333;
+
+.panel-value {
+  color: var(--color-terminal-text);
+  font-weight: 500;
+}
+
+.panel-value-pos { color: var(--color-terminal-green); }
+.panel-value-neg { color: var(--color-terminal-red); }
+.panel-value-amber { color: var(--color-terminal-amber); }
+
+/* Subtle scanline overlay for depth */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.04) 2px,
+    rgba(0,0,0,0.04) 4px
+  );
+  z-index: 9999;
+}
+
+/* Glow effect for active elements */
+.glow-cyan {
+  text-shadow: 0 0 8px rgba(0, 194, 224, 0.5);
+}
+
+.glow-amber {
+  text-shadow: 0 0 8px rgba(240, 165, 0, 0.5);
 }

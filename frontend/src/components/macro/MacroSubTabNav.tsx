@@ -10,13 +10,13 @@ interface MacroSubTabNavProps {
 
 export function MacroSubTabNav({ activeTab, onTabChange }: MacroSubTabNavProps) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        borderBottom: `1px solid ${TERMINAL.BORDER}`,
-        backgroundColor: TERMINAL.BG,
-      }}
-    >
+    <div style={{
+      display: 'flex',
+      borderBottom: `1px solid ${TERMINAL.BORDER}`,
+      backgroundColor: TERMINAL.PANEL,
+      flexShrink: 0,
+      height: 28,
+    }}>
       {SUB_TABS.map((tab) => {
         const isActive = tab === activeTab
         return (
@@ -24,26 +24,21 @@ export function MacroSubTabNav({ activeTab, onTabChange }: MacroSubTabNavProps) 
             key={tab}
             onClick={() => onTabChange(tab)}
             style={{
-              fontFamily: 'inherit',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              letterSpacing: '0.1em',
-              padding: '4px 16px',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              fontWeight: isActive ? 600 : 400,
+              letterSpacing: '0.15em',
+              padding: '0 14px',
               border: 'none',
+              borderBottom: isActive
+                ? `2px solid ${TERMINAL.AMBER}`
+                : '2px solid transparent',
               cursor: 'pointer',
-              backgroundColor: isActive ? TERMINAL.AMBER : 'transparent',
-              color: isActive ? '#000000' : TERMINAL.AMBER,
+              backgroundColor: 'transparent',
+              color: isActive ? TERMINAL.AMBER : TERMINAL.MUTED,
               outline: 'none',
-            }}
-            onMouseEnter={(e) => {
-              if (!isActive) {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = TERMINAL.BORDER
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
-              }
+              height: '100%',
+              transition: 'color 0.15s',
             }}
           >
             {tab}

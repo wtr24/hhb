@@ -1,16 +1,3 @@
-/**
- * EquityModule — master Bloomberg grid layout (D-01).
- *
- * Fixed-height viewport layout. Nothing scrolls except the news panel (D-11).
- * Layout zones:
- *   Row 1: TickerCommandBar (auto height, ~30px)
- *   Row 2: QuoteBar with GBP toggle (auto height, ~24px)
- *   Row 3: Main content area — ChartPanel (60%) | Fundamentals+ShortInterest+Insider sidebar (40%)
- *   Row 4: Bottom row — OptionsChain (60%) | NewsPanel (40%)
- *
- * On ticker submit (D-04): all panels refresh simultaneously via ticker state change.
- * GBP toggle (D-12): fetches /api/fx/USD/GBP on activation, applies rate to QuoteBar.
- */
 import { useState, useEffect } from 'react';
 import { useEquityWebSocket } from '../../hooks/useEquityWebSocket';
 import { useEquityData } from '../../hooks/useEquityData';
@@ -22,6 +9,7 @@ import { ShortInterestPanel } from './ShortInterestPanel';
 import { InsiderPanel } from './InsiderPanel';
 import { NewsPanel } from './NewsPanel';
 import OptionsChain from './OptionsChain';
+import { TERMINAL } from '../../lib/theme';
 import type { ActiveIndicator, IndicatorDefinition } from './IndicatorPicker';
 
 interface FXRateResponse {
@@ -33,7 +21,6 @@ export function EquityModule() {
   const [gbpMode, setGbpMode] = useState(false);
   const [gbpRate, setGbpRate] = useState<number | null>(null);
 
-  // TA indicator state (TA-01 through TA-08)
   const [activeIndicators, setActiveIndicators] = useState<ActiveIndicator[]>([]);
   const [fibActive, setFibActive] = useState(false);
   const [ewActive, setEwActive] = useState(false);
@@ -44,19 +31,14 @@ export function EquityModule() {
   const quote = useEquityWebSocket(ticker);
   const { chartData, earningsMarkers, dividendMarkers } = useEquityData(ticker);
 
-  // Fetch GBP rate when gbpMode is toggled on (EQUITY-11, D-12)
   useEffect(() => {
     if (gbpMode && gbpRate === null) {
       fetch('/api/fx/USD/GBP')
         .then((r) => r.json())
         .then((data: FXRateResponse) => {
-          if (data?.rate) {
-            setGbpRate(data.rate);
-          }
+          if (data?.rate) setGbpRate(data.rate);
         })
-        .catch(() => {
-          // Silently fail — GBPToggle will remain active but no conversion applied
-        });
+        .catch(() => {});
     }
   }, [gbpMode, gbpRate]);
 
@@ -64,26 +46,12 @@ export function EquityModule() {
     setGbpMode((prev) => !prev);
   }
 
-  // Indicator handlers
   function handleToggleIndicator(def: IndicatorDefinition) {
     setActiveIndicators((prev) => {
       const existing = prev.find((a) => a.name === def.name);
-      if (existing) {
-        // Remove it
-        return prev.filter((a) => a.name !== def.name);
-      }
-      // Add it with a unique id
+      if (existing) return prev.filter((a) => a.name !== def.name);
       const id = `${def.name}_${Object.values(def.defaultParams).join('_') || 'default'}`;
-      return [
-        ...prev,
-        {
-          id,
-          name: def.name,
-          label: def.label,
-          params: { ...def.defaultParams },
-          paneType: def.paneType,
-        },
-      ];
+      return [...prev, { id, name: def.name, label: def.label, params: { ...def.defaultParams }, paneType: def.paneType }];
     });
   }
 
@@ -91,7 +59,6 @@ export function EquityModule() {
     setActiveIndicators((prev) =>
       prev.map((a) => {
         if (a.id !== id) return a;
-        // Rebuild id to reflect new params
         const newId = `${a.name}_${Object.values(params).join('_') || 'default'}`;
         return { ...a, id: newId, params };
       })
@@ -104,7 +71,6 @@ export function EquityModule() {
 
   function handleTickerSubmit(newTicker: string) {
     setTicker(newTicker);
-    // Clear indicator state on ticker change (D-04 extension)
     setActiveIndicators([]);
     setFibActive(false);
     setEwActive(false);
@@ -112,36 +78,79 @@ export function EquityModule() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-terminal-bg text-terminal-amber font-terminal text-xs overflow-hidden">
-      {/* Row 1: Ticker command bar */}
+    <div style={{
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: TERMINAL.BG,
+      overflow: 'hidden',
+    }}>
       <TickerCommandBar onSubmit={handleTickerSubmit} />
+      <QuoteBar quote={quote} gbpMode={gbpMode} gbpRate={gbpRate} onGbpToggle={handleGbpToggle} />
 
-      {/* Row 2: Live quote bar with GBP toggle */}
-      <QuoteBar
-        quote={quote}
-        gbpMode={gbpMode}
-        gbpRate={gbpRate}
-        onGbpToggle={handleGbpToggle}
-      />
-
-      {/* No ticker — placeholder */}
       {!ticker && (
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-terminal-dim tracking-widest">
-            TYPE A TICKER TO BEGIN
-          </span>
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 14,
+        }}>
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            border: `1px solid ${TERMINAL.BORDER_BRIGHT}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <div style={{
+              width: 16,
+              height: 16,
+              background: `linear-gradient(135deg, ${TERMINAL.CYAN}60, ${TERMINAL.AMBER}60)`,
+              borderRadius: '50%',
+            }} />
+          </div>
+          <div style={{
+            fontSize: 9,
+            letterSpacing: '0.25em',
+            color: TERMINAL.MUTED,
+            textTransform: 'uppercase',
+          }}>
+            Enter a ticker symbol to begin
+          </div>
+          <div style={{
+            fontSize: 9,
+            color: TERMINAL.DIM,
+            letterSpacing: '0.1em',
+          }}>
+            e.g. AAPL · TSLA · LLOY.L · ^FTSE
+          </div>
         </div>
       )}
 
-      {/* Rows 3 + 4: Main grid — only shown once ticker is entered */}
       {ticker && (
-        <div className="flex-1 grid grid-rows-[1fr_minmax(200px,25vh)] overflow-hidden min-h-0">
-
-          {/* Row 3: Main content — ChartPanel (60%) | Right sidebar (40%) */}
-          <div className="grid grid-cols-[60%_40%] overflow-hidden min-h-0">
-
-            {/* Left: 4-panel candlestick chart grid (D-05, D-06, D-07) */}
-            <div className="border border-terminal-border overflow-hidden min-h-0">
+        <div style={{
+          flex: 1,
+          display: 'grid',
+          gridTemplateRows: '1fr minmax(180px, 22vh)',
+          overflow: 'hidden',
+          minHeight: 0,
+          gap: 1,
+          backgroundColor: TERMINAL.BORDER,
+        }}>
+          {/* Row 3: Charts + sidebar */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '60% 40%',
+            overflow: 'hidden',
+            minHeight: 0,
+            gap: 1,
+            backgroundColor: TERMINAL.BORDER,
+          }}>
+            <div style={{ backgroundColor: TERMINAL.BG, overflow: 'hidden', minHeight: 0 }}>
               <ChartPanel
                 ticker={ticker}
                 chartData={chartData}
@@ -164,30 +173,39 @@ export function EquityModule() {
               />
             </div>
 
-            {/* Right: Stacked fundamentals / short interest / insider panels */}
-            <div className="flex flex-col overflow-hidden min-h-0">
-              <div className="flex-1 overflow-hidden min-h-0">
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              minHeight: 0,
+              gap: 1,
+              backgroundColor: TERMINAL.BORDER,
+            }}>
+              <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, backgroundColor: TERMINAL.BG }}>
                 <FundamentalsPanel ticker={ticker} />
               </div>
-              <div className="flex-1 overflow-hidden min-h-0">
+              <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, backgroundColor: TERMINAL.BG }}>
                 <ShortInterestPanel ticker={ticker} />
               </div>
-              <div className="flex-1 overflow-hidden min-h-0">
+              <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, backgroundColor: TERMINAL.BG }}>
                 <InsiderPanel ticker={ticker} />
               </div>
             </div>
           </div>
 
-          {/* Row 4: Bottom row — OptionsChain (60%) | News (40%) */}
-          <div className="grid grid-cols-[60%_40%] overflow-hidden min-h-0">
-
-            {/* Left: Options chain + IV surface (D-08, D-09, D-10) */}
-            <div className="border border-terminal-border overflow-hidden min-h-0">
+          {/* Row 4: Options + News */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '60% 40%',
+            overflow: 'hidden',
+            minHeight: 0,
+            gap: 1,
+            backgroundColor: TERMINAL.BORDER,
+          }}>
+            <div style={{ backgroundColor: TERMINAL.BG, overflow: 'hidden', minHeight: 0 }}>
               <OptionsChain ticker={ticker} />
             </div>
-
-            {/* Right: News feed — scrollable (D-11 exception) */}
-            <div className="border border-terminal-border overflow-hidden min-h-0">
+            <div style={{ backgroundColor: TERMINAL.BG, overflow: 'hidden', minHeight: 0 }}>
               <NewsPanel ticker={ticker} />
             </div>
           </div>

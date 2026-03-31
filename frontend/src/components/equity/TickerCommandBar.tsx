@@ -1,11 +1,5 @@
-/**
- * TickerCommandBar — terminal-style ticker input (D-03, D-04).
- *
- * Bloomberg-style command bar: `TICKER> ` prefix in amber, monospace font,
- * amber blinking cursor, auto-uppercase. On Enter, calls onSubmit and clears
- * the input. No history or autocomplete (D-04: plain input only).
- */
 import { useEffect, useRef, useState } from 'react';
+import { TERMINAL } from '../../lib/theme';
 
 interface TickerCommandBarProps {
   onSubmit: (ticker: string) => void;
@@ -15,7 +9,6 @@ export function TickerCommandBar({ onSubmit }: TickerCommandBarProps) {
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-focus on mount (D-03: terminal feel requires ready state)
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -31,25 +24,65 @@ export function TickerCommandBar({ onSubmit }: TickerCommandBarProps) {
   }
 
   return (
-    <div className="flex items-center border-b border-terminal-border px-2 py-0.5 bg-terminal-bg">
-      {/* Terminal-style prefix — NOT part of the input (D-03) */}
-      <span className="text-terminal-amber font-terminal text-xs font-bold select-none mr-1">
-        TICKER&gt;
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0 12px',
+      height: 34,
+      borderBottom: `1px solid ${TERMINAL.BORDER}`,
+      backgroundColor: TERMINAL.PANEL,
+      flexShrink: 0,
+      gap: 10,
+    }}>
+      {/* Label */}
+      <span style={{
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: '0.15em',
+        color: TERMINAL.CYAN,
+        textTransform: 'uppercase',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+      }}>
+        TICKER
       </span>
+      <span style={{
+        color: TERMINAL.BORDER_BRIGHT,
+        fontSize: 12,
+        lineHeight: 1,
+      }}>›</span>
       <input
         ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value.toUpperCase())}
         onKeyDown={handleKeyDown}
-        className="flex-1 bg-transparent border-none outline-none text-terminal-amber font-terminal text-xs uppercase placeholder:text-terminal-dim"
-        placeholder="TYPE TICKER AND PRESS ENTER"
+        placeholder="ENTER SYMBOL"
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="characters"
         spellCheck={false}
-        style={{ caretColor: '#ff9900' }}
+        style={{
+          flex: 1,
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          color: TERMINAL.AMBER,
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 13,
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          caretColor: TERMINAL.CYAN,
+        }}
       />
+      <span style={{
+        fontSize: 9,
+        color: TERMINAL.DIM,
+        letterSpacing: '0.1em',
+        whiteSpace: 'nowrap',
+      }}>
+        PRESS ENTER
+      </span>
     </div>
   );
 }

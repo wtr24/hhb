@@ -1,11 +1,5 @@
-/**
- * FundamentalsPanel — right sidebar panel for key valuation metrics.
- *
- * D-01: Right sidebar, compact vertical list with amber/green terminal styling.
- * D-02: Stale badge shown when data is not fresh.
- * EQUITY-06: P/E, EV/EBITDA, ROE, Debt/Equity, Market Cap.
- */
 import { useEffect, useState } from "react";
+import { TERMINAL } from "../../lib/theme";
 
 interface FundamentalsData {
   ticker: string;
@@ -32,7 +26,6 @@ function formatMarketCap(value: number | null): string {
 
 function formatPct(value: number | null): string {
   if (value === null || value === undefined) return "--";
-  // ROE from yfinance is a decimal (e.g. 0.45 = 45%)
   const pct = Math.abs(value) <= 5 ? value * 100 : value;
   return `${pct.toFixed(2)}%`;
 }
@@ -58,14 +51,8 @@ export function FundamentalsPanel({ ticker }: Props) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
-      .then((json: FundamentalsData) => {
-        setData(json);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+      .then((json: FundamentalsData) => { setData(json); setLoading(false); })
+      .catch((err) => { setError(err.message); setLoading(false); });
   }, [ticker]);
 
   const rows: Array<{ label: string; value: string }> = data
@@ -73,44 +60,81 @@ export function FundamentalsPanel({ ticker }: Props) {
         { label: "P/E", value: fmt(data.pe_ratio) },
         { label: "EV/EBITDA", value: fmt(data.ev_ebitda) },
         { label: "ROE", value: formatPct(data.roe) },
-        { label: "Debt/Equity", value: fmt(data.debt_equity) },
-        { label: "Market Cap", value: formatMarketCap(data.market_cap) },
+        { label: "D/E", value: fmt(data.debt_equity) },
+        { label: "MKT CAP", value: formatMarketCap(data.market_cap) },
       ]
     : [];
 
   return (
-    <div className="border border-terminal-border p-2 text-xs font-terminal">
-      {/* Header row */}
-      <div className="flex justify-between items-center mb-1 border-b border-terminal-border pb-1">
-        <span className="text-terminal-amber font-bold tracking-wider">FUNDAMENTALS</span>
-        <div className="flex gap-1">
+    <div style={{
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: TERMINAL.PANEL,
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '5px 10px',
+        borderBottom: `1px solid ${TERMINAL.BORDER}`,
+        flexShrink: 0,
+      }}>
+        <span style={{
+          fontSize: 9,
+          fontWeight: 600,
+          letterSpacing: '0.15em',
+          color: TERMINAL.CYAN,
+        }}>
+          FUNDAMENTALS
+        </span>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {data?.stale && (
-            <span className="text-terminal-amber text-xs border border-terminal-amber px-1">
-              STALE
-            </span>
+            <span style={{
+              fontSize: 8,
+              color: TERMINAL.AMBER,
+              border: `1px solid ${TERMINAL.AMBER}50`,
+              padding: '0px 4px',
+              borderRadius: 2,
+              letterSpacing: '0.1em',
+            }}>STALE</span>
           )}
           {data?.source && (
-            <span className="text-terminal-dim text-xs">24h</span>
+            <span style={{ fontSize: 8, color: TERMINAL.DIM, letterSpacing: '0.08em' }}>24h</span>
           )}
         </div>
       </div>
 
       {/* Content */}
-      {loading && (
-        <div className="text-terminal-dim text-xs py-1">Loading...</div>
-      )}
-      {error && (
-        <div className="text-terminal-red text-xs py-1">Error: {error}</div>
-      )}
-      {data && rows.map(({ label, value }) => (
-        <div key={label} className="flex justify-between py-0.5">
-          <span className="text-terminal-amber">{label}</span>
-          <span className="text-terminal-green">{value}</span>
-        </div>
-      ))}
-      {!loading && !error && !data && (
-        <div className="text-terminal-dim text-xs py-1">No data</div>
-      )}
+      <div style={{ flex: 1, padding: '4px 10px', overflow: 'hidden' }}>
+        {loading && (
+          <div style={{ color: TERMINAL.MUTED, fontSize: 9, paddingTop: 8 }}>LOADING...</div>
+        )}
+        {error && (
+          <div style={{ color: TERMINAL.RED, fontSize: 9, paddingTop: 8 }}>ERR: {error}</div>
+        )}
+        {rows.map(({ label, value }) => (
+          <div key={label} style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '3px 0',
+            borderBottom: `1px solid ${TERMINAL.BORDER}`,
+          }}>
+            <span style={{ fontSize: 9, color: TERMINAL.MUTED, letterSpacing: '0.08em' }}>
+              {label}
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: TERMINAL.TEXT }}>
+              {value}
+            </span>
+          </div>
+        ))}
+        {!loading && !error && !data && (
+          <div style={{ color: TERMINAL.DIM, fontSize: 9, paddingTop: 8 }}>NO DATA</div>
+        )}
+      </div>
     </div>
   );
 }

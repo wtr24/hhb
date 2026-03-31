@@ -7,6 +7,36 @@ import { TIMEFRAME_LABELS } from '../../types/equity';
 import type { ActiveIndicator, IndicatorDefinition } from './IndicatorPicker';
 import { TERMINAL } from '../../lib/theme';
 
+const ToolBtn = ({
+  onClick,
+  active,
+  children,
+}: {
+  onClick?: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: 9,
+      fontWeight: active ? 600 : 400,
+      letterSpacing: '0.1em',
+      padding: '2px 8px',
+      background: active ? `${TERMINAL.CYAN}18` : 'transparent',
+      border: active
+        ? `1px solid ${TERMINAL.CYAN}80`
+        : `1px solid ${TERMINAL.BORDER_BRIGHT}`,
+      borderRadius: 3,
+      color: active ? TERMINAL.CYAN : TERMINAL.MUTED,
+      cursor: 'pointer',
+    }}
+  >
+    {children}
+  </button>
+);
+
 interface ChartPanelProps {
   ticker: string;
   chartData: Record<Timeframe, OHLCVBar[]>;
@@ -76,28 +106,25 @@ export function ChartPanel({
     return (
       <div className="w-full h-full border border-terminal-border flex flex-col">
         {/* Expanded header with TA controls */}
-        <div className="flex items-center justify-between px-2 py-0.5 border-b border-terminal-border text-xs flex-shrink-0" style={{ minHeight: 24 }}>
-          <span className="text-terminal-amber">
-            {ticker} — {TIMEFRAME_LABELS[expandedPanel]}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 10px',
+          height: 30,
+          borderBottom: `1px solid ${TERMINAL.BORDER}`,
+          backgroundColor: TERMINAL.PANEL,
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: TERMINAL.AMBER, letterSpacing: '0.1em' }}>
+            {ticker} <span style={{ color: TERMINAL.MUTED }}>·</span> {TIMEFRAME_LABELS[expandedPanel]}
           </span>
 
-          {/* TA toolbar — only in expanded mode */}
-          <div className="flex items-center gap-1 relative">
-            {/* Indicators button with picker anchor */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ position: 'relative' }}>
-              <button
-                onClick={onIndicatorsClick}
-                style={{
-                  background: TERMINAL.BG,
-                  border: `1px solid ${TERMINAL.BORDER}`,
-                  color: TERMINAL.AMBER,
-                  padding: '4px 8px',
-                  fontSize: 11,
-                  cursor: 'pointer',
-                }}
-              >
-                {indicatorsBtnLabel}
-              </button>
+              <ToolBtn onClick={onIndicatorsClick} active={activeIndicatorCount > 0}>
+                INDICATORS {activeIndicatorCount > 0 ? `(${activeIndicatorCount})` : ''}
+              </ToolBtn>
               <IndicatorPicker
                 isOpen={indicatorPickerOpen}
                 onClose={onCloseIndicatorPicker ?? (() => {})}
@@ -106,44 +133,9 @@ export function ChartPanel({
                 onParamChange={onIndicatorParamChange ?? (() => {})}
               />
             </div>
-
-            {/* Fibonacci button */}
-            <button
-              onClick={onFibClick}
-              style={{
-                background: TERMINAL.BG,
-                border: fibActive ? `1px solid ${TERMINAL.AMBER}` : `1px solid ${TERMINAL.BORDER}`,
-                color: TERMINAL.AMBER,
-                padding: '4px 8px',
-                fontSize: 11,
-                cursor: 'pointer',
-              }}
-            >
-              [Fib]
-            </button>
-
-            {/* Elliott Wave button */}
-            <button
-              onClick={onEwClick}
-              style={{
-                background: TERMINAL.BG,
-                border: ewActive ? `1px solid ${TERMINAL.AMBER}` : `1px solid ${TERMINAL.BORDER}`,
-                color: TERMINAL.AMBER,
-                padding: '4px 8px',
-                fontSize: 11,
-                cursor: 'pointer',
-              }}
-            >
-              [EW]
-            </button>
-
-            <button
-              onClick={() => setExpandedPanel(null)}
-              className="text-terminal-dim hover:text-terminal-amber"
-              style={{ marginLeft: 8 }}
-            >
-              [ESC] COLLAPSE
-            </button>
+            <ToolBtn onClick={onFibClick} active={fibActive}>FIB</ToolBtn>
+            <ToolBtn onClick={onEwClick} active={ewActive}>EW</ToolBtn>
+            <ToolBtn onClick={() => setExpandedPanel(null)}>ESC</ToolBtn>
           </div>
         </div>
 
@@ -167,11 +159,19 @@ export function ChartPanel({
 
   // Default 4-panel grid view (D-05)
   return (
-    <div className="grid grid-cols-2 grid-rows-2 w-full h-full">
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gridTemplateRows: '1fr 1fr',
+      width: '100%',
+      height: '100%',
+      gap: 1,
+      backgroundColor: TERMINAL.BORDER,
+    }}>
       {TIMEFRAMES.map((tf) => (
         <div
           key={tf}
-          className="border border-terminal-border overflow-hidden"
+          style={{ overflow: 'hidden', backgroundColor: TERMINAL.BG }}
         >
           <CandleChart
             data={chartData[tf]}

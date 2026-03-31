@@ -204,7 +204,7 @@ export function CandleChart({
       drawing.levels.forEach((level) => {
         if (!chartRef.current) return;
         const series = chartRef.current.addSeries(LineSeries, {
-          color: level.is_key_level ? '#ff9900' : '#2a2a2a',
+          color: level.is_key_level ? '#f0a500' : '#2a3f5a',
           lineWidth: 1,
           title: level.label,
         }, 0);
@@ -242,7 +242,7 @@ export function CandleChart({
         return {
           time: bar.time,
           position,
-          color: '#ff9900',
+          color: '#f0a500',
           shape: 'arrowUp' as SeriesMarkerShape,
           text: label.label,
           size: 1,
@@ -269,15 +269,33 @@ export function CandleChart({
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* Label overlay */}
-      <span className="absolute top-1 left-1 text-terminal-dim text-xs z-10 pointer-events-none">
+      <span style={{
+        position: 'absolute',
+        top: 6,
+        left: 8,
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: '0.12em',
+        color: 'rgba(86, 104, 128, 0.8)',
+        zIndex: 10,
+        pointerEvents: 'none',
+        fontFamily: "'JetBrains Mono', monospace",
+      }}>
         {label}
       </span>
 
       {/* Time range buttons — only shown in expanded mode */}
       {expanded && (
-        <div className="absolute top-1 right-1 z-10 flex gap-1">
+        <div style={{
+          position: 'absolute',
+          top: 4,
+          right: 8,
+          zIndex: 10,
+          display: 'flex',
+          gap: 3,
+        }}>
           {TIME_RANGES.map((r) => (
             <button
               key={r}
@@ -285,7 +303,18 @@ export function CandleChart({
                 e.stopPropagation();
                 setTimeRange(r);
               }}
-              className="px-1 py-0.5 text-xs border border-terminal-border hover:bg-terminal-border text-terminal-amber"
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 8,
+                fontWeight: 500,
+                letterSpacing: '0.08em',
+                padding: '2px 5px',
+                border: `1px solid rgba(42, 63, 90, 0.8)`,
+                borderRadius: 2,
+                backgroundColor: 'rgba(15, 21, 32, 0.9)',
+                color: 'rgba(86, 104, 128, 0.9)',
+                cursor: 'pointer',
+              }}
             >
               {r}
             </button>

@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   BarChart,
   Bar,
@@ -89,7 +88,7 @@ export function SeasonalityChart({ data, loading }: SeasonalityChartProps) {
                   fontSize: '10px',
                   color: TERMINAL.AMBER,
                 }}
-                formatter={(value: number) => [`${value?.toFixed(2)}%`, 'Avg Return']}
+                formatter={(value: number | undefined) => [`${value?.toFixed(2) ?? ''}%`, 'Avg Return']}
               />
               <Bar dataKey="avg_return" isAnimationActive={false}>
                 {monthlyAvg.map((entry, index) => (

@@ -1,4 +1,3 @@
-import React from 'react'
 import { TERMINAL } from '../../lib/theme'
 import { MacroPanel } from './MacroPanel'
 import { PolicyRatesPanel } from './PolicyRatesPanel'
@@ -116,3 +115,5 @@ export function IndicatorsTab({ data, loading }: IndicatorsTabProps) {
     </div>
   )
 }
+
+export default IndicatorsTab

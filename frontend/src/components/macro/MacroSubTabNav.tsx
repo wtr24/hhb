@@ -1,4 +1,3 @@
-import React from 'react'
 import { TERMINAL } from '../../lib/theme'
 
 const SUB_TABS = ['CURVES', 'INDICATORS', 'RISK', 'SENTIMENT'] as const

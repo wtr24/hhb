@@ -1,4 +1,3 @@
-import React from 'react'
 import { TERMINAL } from '../../lib/theme'
 import { FearGreedGauge } from './FearGreedGauge'
 import { AtAGlanceStrip } from './AtAGlanceStrip'
@@ -52,3 +51,5 @@ export function SentimentTab({ data, loading }: SentimentTabProps) {
     </div>
   )
 }
+
+export default SentimentTab

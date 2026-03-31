@@ -1,4 +1,3 @@
-import React from 'react'
 import { TERMINAL } from '../../lib/theme'
 import { VixTermChart } from './VixTermChart'
 import { RegimeClassifier } from './RegimeClassifier'
@@ -52,3 +51,5 @@ export function RiskTab({ data, loading }: RiskTabProps) {
     </div>
   )
 }
+
+export default RiskTab

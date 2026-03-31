@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   LineChart,
   Line,
@@ -108,7 +107,7 @@ export function PutCallChart({ data, loading }: PutCallChartProps) {
                 fontSize: '10px',
                 color: TERMINAL.AMBER,
               }}
-              formatter={(value: number) => [value?.toFixed(2), 'P/C']}
+              formatter={(value: number | undefined) => [value?.toFixed(2) ?? '', 'P/C']}
             />
             {/* Neutral reference line at 0.7 — D-06 / UI-SPEC */}
             <ReferenceLine

@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   ComposedChart,
   Line,
@@ -85,7 +84,7 @@ function SpreadChart({
               fontSize: '10px',
               color: TERMINAL.AMBER,
             }}
-            formatter={(value: number) => [`${value?.toFixed(2)}%`]}
+            formatter={(value: number | undefined) => [`${value?.toFixed(2) ?? ''}%`]}
           />
           <ReferenceLine y={0} stroke={TERMINAL.DIM} strokeDasharray="2 2" />
           {negZones.map((zone, i) => (

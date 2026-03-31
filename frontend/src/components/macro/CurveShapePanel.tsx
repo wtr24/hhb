@@ -1,4 +1,3 @@
-import React from 'react'
 import { TERMINAL } from '../../lib/theme'
 import type { CurvesData } from '../../hooks/useMacroData'
 

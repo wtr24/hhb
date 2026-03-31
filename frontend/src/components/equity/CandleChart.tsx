@@ -154,7 +154,7 @@ export function CandleChart({
         text: m.text,
       }));
       markersInstanceRef.current = createSeriesMarkers(
-        seriesRef.current,
+        seriesRef.current as any,
         formattedMarkers as Parameters<typeof createSeriesMarkers>[1]
       );
     }
@@ -176,7 +176,7 @@ export function CandleChart({
       if (overlay.seriesType === 'line') {
         const series = chartRef.current.addSeries(LineSeries, {
           color: overlay.color,
-          lineWidth: overlay.lineWidth ?? 1,
+          lineWidth: (overlay.lineWidth ?? 1) as any,
           title: overlay.title ?? '',
         }, 0);
         const pts = Array.isArray(overlay.data) ? overlay.data : [];
@@ -252,7 +252,7 @@ export function CandleChart({
 
     if (ewMarkers.length > 0) {
       ewMarkersInstanceRef.current = createSeriesMarkers(
-        seriesRef.current,
+        seriesRef.current as any,
         ewMarkers as Parameters<typeof createSeriesMarkers>[1]
       );
     }

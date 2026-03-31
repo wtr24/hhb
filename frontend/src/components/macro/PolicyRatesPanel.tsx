@@ -1,4 +1,3 @@
-import React from 'react'
 import { TERMINAL } from '../../lib/theme'
 import type { PolicyRatesPanel as PolicyRatesData } from '../../hooks/useMacroData'
 

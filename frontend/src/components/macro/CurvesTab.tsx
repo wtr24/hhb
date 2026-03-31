@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { TERMINAL } from '../../lib/theme'
 import { YieldCurveChart } from './YieldCurveChart'
 import { SpreadPanel } from './SpreadPanel'
@@ -140,3 +140,5 @@ export function CurvesTab({ data, loading }: CurvesTabProps) {
     </div>
   )
 }
+
+export default CurvesTab

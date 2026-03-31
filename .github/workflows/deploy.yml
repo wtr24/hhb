@@ -27,3 +27,13 @@ jobs:
           tags: wtr24dev/hhb-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          target: production
+          push: true
+          tags: wtr24dev/hhb-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

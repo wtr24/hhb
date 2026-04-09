@@ -684,3 +684,11 @@ def _upsert_result(session, result: dict) -> None:
             .on_conflict_do_nothing(index_elements=["time", "ticker"])
         )
         session.execute(stmt)
+
+
+
+@app.task(name="ingestion.tasks.scrape_tiktok")
+def scrape_tiktok():
+    """Hourly: scrape new TikTok videos from tracked accounts and transcribe them."""
+    from ingestion.tiktok import run_scrape
+    return run_scrape()

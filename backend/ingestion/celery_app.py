@@ -79,5 +79,9 @@ app.conf.update(
             "task": "ingestion.tasks.ingest_ecb_dfr",
             "schedule": crontab(hour=6, minute=45),
         },
+        "scrape-tiktok-hourly": {
+            "task": "ingestion.tasks.scrape_tiktok",
+            "schedule": timedelta(hours=1),
+        },
     },
 )

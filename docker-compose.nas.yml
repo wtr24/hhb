@@ -4,13 +4,13 @@ services:
     container_name: hhb-timescaledb
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: hhb
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hhb}
+      POSTGRES_DB: hhb
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U hhb -d hhb"]
       interval: 10s
       timeout: 5s
       retries: 10

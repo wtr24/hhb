@@ -1,19 +1,19 @@
 services:
   timescaledb:
-    image: timescale/timescaledb:latest-pg15
+    image: timescale/timescaledb:2.18.2-pg16
     container_name: hhb-timescaledb
     restart: unless-stopped
     environment:
-      POSTGRES_DB: hhb
-      POSTGRES_USER: hhb
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-hhb}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - timescale_data:/var/lib/postgresql/data
+      - timescaledb_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hhb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
       start_period: 30s
 
   redis:
@@ -24,8 +24,8 @@ services:
       - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
+      timeout: 3s
       retries: 5
 
   api:
@@ -39,18 +39,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://hhb:${DB_PASSWORD:-hhb}@timescaledb:5432/hhb
-      - REDIS_URL=redis://redis:6379
-      - FRED_API_KEY=${FRED_API_KEY:-}
-      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
-      - FMP_API_KEY=${FMP_API_KEY:-}
-      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
-      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - T212_API_KEY=${T212_API_KEY:-}
-    mem_limit: 2g
-    cpus: '2.0'
+    env_file: .env
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -58,7 +47,7 @@ services:
         condition: service_healthy
     command: >
       sh -c "alembic upgrade head &&
-             uvicorn api.main:app --host 0.0.0.0 --port 8000"
+             uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level info"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
@@ -72,18 +61,7 @@ services:
     labels:
       - com.centurylinklabs.watchtower.enable=true
     restart: unless-stopped
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://hhb:${DB_PASSWORD:-hhb}@timescaledb:5432/hhb
-      - REDIS_URL=redis://redis:6379
-      - FRED_API_KEY=${FRED_API_KEY:-}
-      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
-      - FMP_API_KEY=${FMP_API_KEY:-}
-      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
-      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - T212_API_KEY=${T212_API_KEY:-}
-    mem_limit: 512m
-    cpus: '0.5'
+    env_file: .env
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -97,33 +75,23 @@ services:
     labels:
       - com.centurylinklabs.watchtower.enable=true
     restart: unless-stopped
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://hhb:${DB_PASSWORD:-hhb}@timescaledb:5432/hhb
-      - REDIS_URL=redis://redis:6379
-      - FRED_API_KEY=${FRED_API_KEY:-}
-      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
-      - FMP_API_KEY=${FMP_API_KEY:-}
-      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
-      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - T212_API_KEY=${T212_API_KEY:-}
-    mem_limit: 1g
-    cpus: '1.0'
+    env_file: .env
     depends_on:
       timescaledb:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: celery -A ingestion.celery_app worker --loglevel=info
+    command: celery -A ingestion.celery_app worker --loglevel=info -c 2
 
   frontend:
     image: wtr24dev/hhb-frontend:latest
     container_name: hhb-frontend
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     restart: unless-stopped
     ports:
-      - "3009:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://192.168.0.18:8000
+      - "3009:80"
+    env_file: .env
 
   watchtower:
     image: containrrr/watchtower
@@ -135,4 +103,4 @@ services:
 
 volumes:
   redis_data:
-  timescale_data:
+  timescaledb_data:
